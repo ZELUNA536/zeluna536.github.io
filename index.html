@@ -2,99 +2,38 @@
 <html>
 <head>
 <title>OB-MANIA</title>
+<h2>Discord username - zeluna_gg</h2>
 <link rel="icon" href="https://cdn-icons-png.flaticon.com/512/3212/3212608.png">
 
 <style>
-*{box-sizing:border-box;}
-body{
-  margin:0;
-  background:black;
-  font-family:Arial;
-  color:white;
-  overflow:hidden;
-}
-
-#menu{
-  position:absolute;
-  inset:0;
-  background:black;
-  display:flex;
-  flex-direction:column;
-  justify-content:center;
-  align-items:center;
-  z-index:10;
-}
-
-#menu h1{
-  font-size:55px;
-  margin:10px;
-}
-
-.btn{
-  padding:14px 40px;
-  border:none;
-  border-radius:30px;
-  font-size:18px;
-  cursor:pointer;
-  margin:8px;
-}
-
-#game{
-  width:100vw;
-  height:300px;
-  position:relative;
-  overflow:hidden;
-  border-bottom:3px solid white;
-}
-
-#rocket{
-  width:40px;
-  height:60px;
-  position:absolute;
-  bottom:10px;
-  left:80px;
-  border-radius:8px;
-}
-
-.obstacle{
-  width:40px;
-  height:80px;
-  background:red;
-  position:absolute;
-  bottom:10px;
-}
-
-.star{
-  position:absolute;
-  width:2px;
-  height:2px;
-  background:white;
-}
-
-#hud{
-  position:absolute;
-  top:10px;
-  left:10px;
-  z-index:5;
-  font-size:18px;
-}
+body{margin:0;background:black;font-family:Arial;color:white;overflow:hidden;}
+#game{width:100vw;height:320px;position:relative;overflow:hidden;background:#020b2e;border-bottom:3px solid white;}
+#rocket{width:40px;height:60px;position:absolute;left:80px;bottom:10px;border-radius:8px;}
+.obstacle{width:40px;height:80px;background:red;position:absolute;bottom:10px;}
+.power{width:30px;height:30px;border-radius:50%;position:absolute;}
+#hud{position:absolute;top:10px;left:10px;z-index:5;}
+#menu{position:absolute;inset:0;background:black;display:flex;flex-direction:column;justify-content:center;align-items:center;z-index:10;}
+.btn{padding:12px 30px;border:none;border-radius:30px;font-size:18px;cursor:pointer;margin:6px;}
+#controls{position:absolute;bottom:10px;right:10px;display:flex;gap:10px;z-index:5;}
+.ctrl{width:60px;height:60px;border-radius:50%;background:white;color:black;font-size:18px;}
+#boss{width:120px;height:120px;background:purple;position:absolute;right:30px;top:60px;border-radius:20px;display:none;}
+.shield{box-shadow:0 0 20px cyan;}
+.flash{animation:flash .2s;}
+@keyframes flash{0%{background:white;}100%{background:black;}}
 </style>
 </head>
 
 <body>
 
 <div id="menu">
-  <h1>OB-MANIA</h1>
-
-  <p>Select Rocket</p>
-  <select id="skin">
-    <option value="linear-gradient(white,gray)">Classic</option>
-    <option value="linear-gradient(cyan,blue)">Neon</option>
-    <option value="linear-gradient(orange,red)">Fire</option>
-  </select>
-
-  <p>High Score: <span id="best">0</span></p>
-  <button class="btn" onclick="startGame()">PLAY</button>
+<h1>OB-MANIA</h1>
+<select id="skin">
+<option value="linear-gradient(white,gray)">Classic</option>
+<option value="linear-gradient(cyan,blue)">Neon</option>
+<option value="linear-gradient(orange,red)">Fire</option>
+</select>
+<p>High Score: <span id="best">0</span></p>
+<button class="btn" onclick="startGame()">PLAY</button>
 </div>
 
 <div id="hud">
@@ -102,137 +41,90 @@ Score: <span id="score">0</span> |
 Level: <span id="level">1</span>
 </div>
 
-<div id="game">
-  <div id="rocket"></div>
+<div id="controls">
+<button class="ctrl" onclick="jump()">⬆</button>
+<button class="ctrl" onclick="boost()">⚡</button>
+<button class="ctrl" onclick="pause()">⏸</button>
 </div>
 
-<!-- AUDIO -->
+<div id="game">
+<div id="rocket"></div>
+<div id="boss"></div>
+</div>
+
 <audio id="jumpSound" src="https://assets.mixkit.co/sfx/preview/mixkit-game-jump-437.mp3"></audio>
 <audio id="crashSound" src="https://assets.mixkit.co/sfx/preview/mixkit-arcade-game-over-194.mp3"></audio>
 <audio id="bgm" src="https://assets.mixkit.co/music/preview/mixkit-space-game-668.mp3" loop></audio>
 
 <script>
-let rocket=document.getElementById("rocket");
-let game=document.getElementById("game");
-let score=0,level=1,best=localStorage.getItem("obmaniaBest")||0;
-let gravity=0,jumping=false,running=false;
-let speed=4,spawnRate=1600;
-
+let rocket=document.getElementById("rocket"),game=document.getElementById("game");
+let score=0,level=1,best=localStorage.getItem("best")||0;
+let gravity=0,jumping=false,running=false,shield=false,boosting=false,paused=false;
+let speed=4,spawnRate=1500;
 document.getElementById("best").innerText=best;
-
 rocket.style.background=localStorage.getItem("skin")||"linear-gradient(white,gray)";
-
 document.getElementById("skin").onchange=e=>{
-  localStorage.setItem("skin",e.target.value);
-  rocket.style.background=e.target.value;
+localStorage.setItem("skin",e.target.value);rocket.style.background=e.target.value;
 };
 
-function jump(){
-  if(!jumping && running){
-    gravity=20;
-    jumping=true;
-    jumpSound.currentTime=0;
-    jumpSound.play();
-  }
-}
-
-document.addEventListener("keydown",e=>{
-  if(e.code==="Space") jump();
-});
-document.addEventListener("touchstart",jump);
-document.addEventListener("click",jump);
-
-function startGame(){
-  document.getElementById("menu").style.display="none";
-  running=true;
-  bgm.volume=0.4;
-  bgm.play();
-  spawnObstacle();
-  spawnStars();
-}
+function startGame(){menu.style.display="none";running=true;bgm.play();spawnObstacle();spawnPower();}
+function jump(){if(!jumping&&running&&!paused){gravity=22;jumping=true;jumpSound.play();}}
+function boost(){boosting=true;setTimeout(()=>boosting=false,2000);}
+function pause(){paused=!paused;if(paused)bgm.pause();else bgm.play();}
 
 setInterval(()=>{
-  if(!running) return;
-  let b=parseInt(getComputedStyle(rocket).getPropertyValue("bottom"));
-  b+=gravity;
-  gravity-=1.3;
-  if(b<=10){b=10;jumping=false;}
-  rocket.style.bottom=b+"px";
+if(!running||paused)return;
+let b=parseInt(getComputedStyle(rocket).getPropertyValue("bottom"));
+b+=gravity;gravity-=1.3;
+if(b<=10){b=10;jumping=false;}
+rocket.style.bottom=b+"px";
 },20);
 
 function spawnObstacle(){
-  if(!running) return;
-  let o=document.createElement("div");
-  o.className="obstacle";
-  o.style.left="100%";
-  game.appendChild(o);
+if(!running||paused)return;
+let o=document.createElement("div");
+o.className="obstacle";o.style.left="100%";game.appendChild(o);
+let move=setInterval(()=>{
+o.style.left=o.offsetLeft-(boosting?speed*8:speed*5)+"px";
+let r=rocket.getBoundingClientRect(),ob=o.getBoundingClientRect();
+if(r.right>ob.left&&r.left<ob.right&&r.bottom>ob.top){
+if(shield){shield=false;rocket.classList.remove("shield");o.remove();}
+else{crashSound.play();endGame();}
+}
+if(o.offsetLeft<-50){o.remove();clearInterval(move);score++;updateLevel();}
+},20);
+setTimeout(spawnObstacle,spawnRate);
+}
 
-  let move=setInterval(()=>{
-    o.style.left=o.offsetLeft-speed*5+"px";
-
-    let r=rocket.getBoundingClientRect();
-    let ob=o.getBoundingClientRect();
-
-    if(r.right>ob.left && r.left<ob.right && r.bottom>ob.top){
-      crashSound.play();
-      endGame();
-    }
-
-    if(o.offsetLeft<-50){
-      o.remove();
-      clearInterval(move);
-      score++;
-      document.getElementById("score").innerText=score;
-      updateLevel();
-    }
-  },20);
-
-  setTimeout(spawnObstacle,spawnRate);
+function spawnPower(){
+if(!running||paused)return;
+let p=document.createElement("div");
+p.className="power";p.style.background=["green","yellow","cyan"][Math.floor(Math.random()*3)];
+p.style.left="100%";p.style.top=Math.random()*200+50+"px";game.appendChild(p);
+let move=setInterval(()=>{
+p.style.left=p.offsetLeft-3+"px";
+let r=rocket.getBoundingClientRect(),pb=p.getBoundingClientRect();
+if(r.right>pb.left&&r.left<pb.right&&r.top<pb.bottom&&r.bottom>pb.top){
+if(p.style.background=="green"){shield=true;rocket.classList.add("shield");}
+if(p.style.background=="yellow"){score+=5;}
+p.remove();clearInterval(move);
+}
+if(p.offsetLeft<-30){p.remove();clearInterval(move);}
+},20);
+setTimeout(spawnPower,5000);
 }
 
 function updateLevel(){
-  let newLevel=Math.floor(score/10)+1;
-  if(newLevel!==level){
-    level=newLevel;
-    speed+=1;
-    spawnRate=Math.max(800,spawnRate-150);
-    document.getElementById("level").innerText=level;
-
-    game.style.background=
-      ["#020b2e","#021a3a","#2a003a","#3a0000"][level%4];
-  }
-}
-
-function spawnStars(){
-  if(!running) return;
-  let s=document.createElement("div");
-  s.className="star";
-  s.style.top=Math.random()*300+"px";
-  s.style.left="100%";
-  game.appendChild(s);
-
-  let move=setInterval(()=>{
-    s.style.left=s.offsetLeft-2+"px";
-    if(s.offsetLeft<-10){
-      s.remove();
-      clearInterval(move);
-    }
-  },50);
-
-  setTimeout(spawnStars,300);
+document.getElementById("score").innerText=score;
+let newLevel=Math.floor(score/10)+1;
+if(newLevel!=level){level=newLevel;speed++;spawnRate=Math.max(700,spawnRate-100);
+document.getElementById("level").innerText=level;}
 }
 
 function endGame(){
-  running=false;
-  bgm.pause();
-  if(score>best){
-    best=score;
-    localStorage.setItem("obmaniaBest",best);
-  }
-  setTimeout(()=>{
-    alert("Game Over!\nScore: "+score+"\nHigh Score: "+best);
-    location.reload();
-  },300);
+running=false;bgm.pause();
+if(score>best){best=score;localStorage.setItem("best",best);}
+setTimeout(()=>{alert("Game Over\nScore: "+score+"\nHigh Score: "+best);location.reload();},500);
 }
 </script>
 

@@ -1,14 +1,122 @@
-# Query: 
-# ContextLines: 1
+<!DOCTYPE html>
+<html>
+<head>
+<title>Space Mania</title>
 
-<h2>Click the Rocket Game</h2>
-<button onclick="score++ ; update()">🚀</button>
-<p id="score">0</p>
- 
- <script>
-
- let score = 0;
-
-function update() {
-  document.getElementById("score").innerText = score;
+<style>
+body {
+  margin: 0;
+  background: black;
+  overflow: hidden;
+  color: white;
+  font-family: Arial;
 }
+
+/* Game Area */
+#game {
+  width: 100%;
+  height: 300px;
+  background: linear-gradient(#000, #020b2e);
+  position: relative;
+  overflow: hidden;
+  border-bottom: 3px solid cyan;
+}
+
+/* Rocket */
+#rocket {
+  width: 50px;
+  height: 50px;
+  background: url("https://upload.wikimedia.org/wikipedia/commons/3/3c/Rocket_icon.svg");
+  background-size: cover;
+  position: absolute;
+  bottom: 10px;
+  left: 50px;
+}
+
+/* Obstacle */
+#obstacle {
+  width: 40px;
+  height: 60px;
+  background: red;
+  position: absolute;
+  bottom: 10px;
+  right: -40px;
+  animation: move 2s linear infinite;
+}
+
+/* Movement */
+@keyframes move {
+  from { right: -40px; }
+  to { right: 100%; }
+}
+
+/* Jump */
+.jump {
+  animation: jump 0.5s ease-out;
+}
+
+@keyframes jump {
+  0% { bottom: 10px; }
+  50% { bottom: 150px; }
+  100% { bottom: 10px; }
+}
+
+#score {
+  font-size: 20px;
+  padding: 10px;
+}
+</style>
+</head>
+
+<body>
+
+<h2 style="text-align:center;">🚀 Space Mania</h2>
+<p style="text-align:center;">Click or press Space to jump</p>
+
+<div id="score">Score: 0</div>
+
+<div id="game">
+  <div id="rocket"></div>
+  <div id="obstacle"></div>
+</div>
+
+<script>
+let rocket = document.getElementById("rocket");
+let obstacle = document.getElementById("obstacle");
+let score = 0;
+
+/* Jump function */
+function jump() {
+  if (!rocket.classList.contains("jump")) {
+    rocket.classList.add("jump");
+    setTimeout(() => {
+      rocket.classList.remove("jump");
+    }, 500);
+  }
+}
+
+/* Click or space to jump */
+document.addEventListener("keydown", e => {
+  if (e.code === "Space") jump();
+});
+document.addEventListener("click", jump);
+
+/* Game loop */
+setInterval(() => {
+  let rocketTop = parseInt(window.getComputedStyle(rocket).getPropertyValue("bottom"));
+  let obstacleLeft = obstacle.getBoundingClientRect().left;
+  let rocketLeft = rocket.getBoundingClientRect().left;
+
+  if (obstacleLeft < rocketLeft + 40 && obstacleLeft > rocketLeft && rocketTop < 60) {
+    alert("Game Over! Score: " + score);
+    score = 0;
+  }
+
+  score++;
+  document.getElementById("score").innerText = "Score: " + score;
+
+}, 100);
+</script>
+
+</body>
+</html>

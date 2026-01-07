@@ -1,0 +1,14 @@
+# Query: 
+# ContextLines: 1
+
+<h2>Click the Rocket Game</h2>
+<button onclick="score++ ; update()">🚀</button>
+<p id="score">0</p>
+ 
+ <script>
+
+ let score = 0;
+
+function update() {
+  document.getElementById("score").innerText = score;
+}

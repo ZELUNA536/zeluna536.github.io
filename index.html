@@ -1,7 +1,8 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>Space Mania</title>
+<title>OB-MANIA</title>
+<link rel="icon" href="https://cdn-icons-png.flaticon.com/512/3212/3212608.png">
 
 <style>
 *{box-sizing:border-box;}
@@ -13,84 +14,69 @@ body{
   overflow:hidden;
 }
 
-/* MENU */
 #menu{
   position:absolute;
-  width:100%;
-  height:100%;
-  background:radial-gradient(circle,#020024,#000);
+  inset:0;
+  background:black;
   display:flex;
   flex-direction:column;
   justify-content:center;
   align-items:center;
   z-index:10;
 }
+
 #menu h1{
-  font-size:60px;
-  color:cyan;
-  text-shadow:0 0 30px cyan;
-}
-.btn{
-  background:cyan;
-  border:none;
-  padding:15px 40px;
-  font-size:18px;
-  border-radius:30px;
-  cursor:pointer;
+  font-size:55px;
   margin:10px;
 }
 
-/* GAME */
+.btn{
+  padding:14px 40px;
+  border:none;
+  border-radius:30px;
+  font-size:18px;
+  cursor:pointer;
+  margin:8px;
+}
+
 #game{
   width:100vw;
   height:300px;
   position:relative;
-  background:linear-gradient(#020b2e,#000);
   overflow:hidden;
-  border-bottom:3px solid cyan;
+  border-bottom:3px solid white;
 }
 
-/* STARS */
-.star{
-  position:absolute;
-  width:2px;
-  height:2px;
-  background:white;
-  animation:moveStar linear infinite;
-}
-@keyframes moveStar{
-  from{left:100%;}
-  to{left:-5px;}
-}
-
-/* ROCKET */
 #rocket{
   width:40px;
   height:60px;
   position:absolute;
   bottom:10px;
   left:80px;
-  background:linear-gradient(cyan,blue);
-  border-radius:10px;
-  box-shadow:0 0 20px cyan;
+  border-radius:8px;
 }
 
-/* OBSTACLE */
 .obstacle{
   width:40px;
-  height:60px;
+  height:80px;
   background:red;
   position:absolute;
   bottom:10px;
 }
 
-/* HUD */
+.star{
+  position:absolute;
+  width:2px;
+  height:2px;
+  background:white;
+}
+
 #hud{
   position:absolute;
   top:10px;
   left:10px;
-  font-size:18px;
   z-index:5;
+  font-size:18px;
 }
 </style>
 </head>
@@ -98,143 +84,151 @@ body{
 <body>
 
 <div id="menu">
-  <h1>🚀 SPACE MANIA</h1>
+  <h1>OB-MANIA</h1>
+
+  <p>Select Rocket</p>
+  <select id="skin">
+    <option value="linear-gradient(white,gray)">Classic</option>
+    <option value="linear-gradient(cyan,blue)">Neon</option>
+    <option value="linear-gradient(orange,red)">Fire</option>
+  </select>
+
   <p>High Score: <span id="best">0</span></p>
-  <p>Select Difficulty</p>
-  <button class="btn" onclick="startGame(3)">Easy</button>
-  <button class="btn" onclick="startGame(2)">Normal</button>
-  <button class="btn" onclick="startGame(1)">Hard</button>
+  <button class="btn" onclick="startGame()">PLAY</button>
 </div>
 
 <div id="hud">
-  Score: <span id="score">0</span> |
-  Level: <span id="level">1</span>
+Score: <span id="score">0</span> |
+Level: <span id="level">1</span>
 </div>
 
 <div id="game">
   <div id="rocket"></div>
 </div>
 
-<!-- SOUND EFFECTS -->
+<!-- AUDIO -->
 <audio id="jumpSound" src="https://assets.mixkit.co/sfx/preview/mixkit-game-jump-437.mp3"></audio>
 <audio id="crashSound" src="https://assets.mixkit.co/sfx/preview/mixkit-arcade-game-over-194.mp3"></audio>
+<audio id="bgm" src="https://assets.mixkit.co/music/preview/mixkit-space-game-668.mp3" loop></audio>
 
 <script>
-let rocket = document.getElementById("rocket");
-let game = document.getElementById("game");
-let score = 0;
-let level = 1;
-let gravity = 0;
-let jumping = false;
-let speed = 3;
-let running = false;
+let rocket=document.getElementById("rocket");
+let game=document.getElementById("game");
+let score=0,level=1,best=localStorage.getItem("obmaniaBest")||0;
+let gravity=0,jumping=false,running=false;
+let speed=4,spawnRate=1600;
 
-let jumpSound = document.getElementById("jumpSound");
-let crashSound = document.getElementById("crashSound");
+document.getElementById("best").innerText=best;
 
-/* Load high score */
-let best = localStorage.getItem("spaceManiaBest") || 0;
-document.getElementById("best").innerText = best;
+rocket.style.background=localStorage.getItem("skin")||"linear-gradient(white,gray)";
 
-/* Jump */
+document.getElementById("skin").onchange=e=>{
+  localStorage.setItem("skin",e.target.value);
+  rocket.style.background=e.target.value;
+};
+
 function jump(){
   if(!jumping && running){
-    gravity = 12;
-    jumping = true;
-    jumpSound.currentTime = 0;
+    gravity=20;
+    jumping=true;
+    jumpSound.currentTime=0;
     jumpSound.play();
   }
 }
+
 document.addEventListener("keydown",e=>{
   if(e.code==="Space") jump();
 });
+document.addEventListener("touchstart",jump);
 document.addEventListener("click",jump);
 
-/* Start */
-function startGame(diff){
-  speed = diff;
+function startGame(){
   document.getElementById("menu").style.display="none";
-  running = true;
+  running=true;
+  bgm.volume=0.4;
+  bgm.play();
   spawnObstacle();
   spawnStars();
 }
 
-/* Physics */
 setInterval(()=>{
   if(!running) return;
-
-  let bottom = parseInt(getComputedStyle(rocket).getPropertyValue("bottom"));
-  bottom += gravity;
-  gravity -= 1;
-
-  if(bottom<=10){
-    bottom=10;
-    jumping=false;
-  }
-
-  rocket.style.bottom = bottom+"px";
+  let b=parseInt(getComputedStyle(rocket).getPropertyValue("bottom"));
+  b+=gravity;
+  gravity-=1.3;
+  if(b<=10){b=10;jumping=false;}
+  rocket.style.bottom=b+"px";
 },20);
 
-/* Obstacles */
 function spawnObstacle(){
   if(!running) return;
+  let o=document.createElement("div");
+  o.className="obstacle";
+  o.style.left="100%";
+  game.appendChild(o);
 
-  let obs = document.createElement("div");
-  obs.classList.add("obstacle");
-  obs.style.left="100%";
-  game.appendChild(obs);
+  let move=setInterval(()=>{
+    o.style.left=o.offsetLeft-speed*5+"px";
 
-  let move = setInterval(()=>{
-    let left = obs.offsetLeft;
-    obs.style.left = left - speed*4 + "px";
+    let r=rocket.getBoundingClientRect();
+    let ob=o.getBoundingClientRect();
 
-    let r = rocket.getBoundingClientRect();
-    let o = obs.getBoundingClientRect();
-
-    if(r.right>o.left && r.left<o.right && r.bottom>o.top){
+    if(r.right>ob.left && r.left<ob.right && r.bottom>ob.top){
       crashSound.play();
       endGame();
     }
 
-    if(left<-50){
-      obs.remove();
+    if(o.offsetLeft<-50){
+      o.remove();
       clearInterval(move);
       score++;
       document.getElementById("score").innerText=score;
-
-      if(score%10===0){
-        level++;
-        speed++;
-        document.getElementById("level").innerText=level;
-      }
+      updateLevel();
     }
   },20);
 
-  setTimeout(spawnObstacle,2000);
+  setTimeout(spawnObstacle,spawnRate);
 }
 
-/* Stars */
+function updateLevel(){
+  let newLevel=Math.floor(score/10)+1;
+  if(newLevel!==level){
+    level=newLevel;
+    speed+=1;
+    spawnRate=Math.max(800,spawnRate-150);
+    document.getElementById("level").innerText=level;
+
+    game.style.background=
+      ["#020b2e","#021a3a","#2a003a","#3a0000"][level%4];
+  }
+}
+
 function spawnStars(){
   if(!running) return;
-  let star=document.createElement("div");
-  star.className="star";
-  star.style.top=Math.random()*300+"px";
-  star.style.left="100%";
-  star.style.animationDuration=Math.random()*3+2+"s";
-  game.appendChild(star);
-  setTimeout(()=>star.remove(),5000);
-  setTimeout(spawnStars,200);
+  let s=document.createElement("div");
+  s.className="star";
+  s.style.top=Math.random()*300+"px";
+  s.style.left="100%";
+  game.appendChild(s);
+
+  let move=setInterval(()=>{
+    s.style.left=s.offsetLeft-2+"px";
+    if(s.offsetLeft<-10){
+      s.remove();
+      clearInterval(move);
+    }
+  },50);
+
+  setTimeout(spawnStars,300);
 }
 
-/* Game Over */
 function endGame(){
   running=false;
-
+  bgm.pause();
   if(score>best){
     best=score;
-    localStorage.setItem("spaceManiaBest",best);
+    localStorage.setItem("obmaniaBest",best);
   }
-
   setTimeout(()=>{
     alert("Game Over!\nScore: "+score+"\nHigh Score: "+best);
     location.reload();

@@ -5,219 +5,241 @@
 <link rel="icon" href="https://cdn-icons-png.flaticon.com/512/3212/3212608.png">
 
 <style>
-body{
-  margin:0;
-  background:black;
-  color:white;
-  font-family:Arial, Helvetica, sans-serif;
-  overflow:hidden;
-}
+body{margin:0;background:black;color:white;font-family:Arial;overflow:hidden;}
 
-/* MENUS */
 .screen{
-  position:fixed;
-  inset:0;
+  position:fixed;inset:0;
   background:black;
   display:flex;
   flex-direction:column;
   justify-content:center;
   align-items:center;
-  z-index:100;
+  z-index:10;
 }
 
-h1{
-  font-size:64px;
-  margin-bottom:20px;
-}
+h1{font-size:64px;margin-bottom:10px;}
 
-button{
-  padding:15px 40px;
-  margin:10px;
-  font-size:18px;
-  border:none;
-  border-radius:30px;
-  cursor:pointer;
-}
-
-/* GAME */
 #game{
-
   position:absolute;
   bottom:0;
   width:100vw;
   height:300px;
   border-top:3px solid white;
   overflow:hidden;
-  background:black;
 }
 
-/* ROCKET */
 #rocket{
-  width:40px;
-  height:60px;
-  background:linear-gradient(cyan,blue);
+  width:40px;height:60px;
   position:absolute;
   left:80px;
   bottom:0;
   border-radius:8px;
 }
 
-/* OBSTACLE */
 .obstacle{
-  width:40px;
-  height:80px;
-  background:red;
   position:absolute;
-  bottom:0;   /* aligns with the white line */
+  bottom:0;
 }
 
-/* HUD */
+.wall{width:40px;height:80px;background:red;}
+.tall{width:40px;height:130px;background:orange;}
+.fly{width:40px;height:40px;background:yellow;bottom:120px;}
+.spin{width:40px;height:40px;background:purple;animation:spin 1s linear infinite;}
+
+@keyframes spin{0%{transform:rotate(0)}100%{transform:rotate(360deg)}}
+
+button{
+  padding:10px 25px;
+  margin:5px;
+  border:none;
+  border-radius:20px;
+  cursor:pointer;
+}
+
+.grid{
+  display:grid;
+  grid-template-columns:repeat(6,auto);
+  gap:10px;
+}
+
 #hud{
   position:fixed;
   top:10px;
   left:10px;
-  z-index:10;
-  font-size:18px;
+  z-index:5;
 }
 </style>
 </head>
 
 <body>
 
-<div id="mainMenu" class="screen">
+<!-- MAIN MENU -->
+<div id="menu" class="screen">
   <h1>OB-MANIA</h1>
-  <button onclick="startGame()">PLAY</button>
+  <button onclick="showLevels()">Play</button>
+  <button onclick="showSkins()">Skins</button>
 </div>
 
-<div id="pauseMenu" class="screen" style="display:none">
-  <h2>Paused</h2>
-  <button onclick="resumeGame()">Resume (P)</button>
-  <button onclick="restartGame()">Restart (R)</button>
+<!-- LEVEL SELECT -->
+<div id="levels" class="screen" style="display:none">
+  <h2>Select Level</h2>
+  <div class="grid" id="levelGrid"></div>
+  <button onclick="back()">Back</button>
 </div>
 
+<!-- SKIN SELECT -->
+<div id="skins" class="screen" style="display:none">
+  <h2>Select Rocket</h2>
+  <div class="grid" id="skinGrid"></div>
+  <button onclick="back()">Back</button>
+</div>
+
+<!-- GAME -->
 <div id="hud">
-  Score: <span id="score">0</span>
+Score: <span id="score">0</span> |
+Level: <span id="level">1</span>
+<button onclick="togglePause()">⏸</button>
+<button onclick="restart()">🔁</button>
 </div>
 
 <div id="game">
   <div id="rocket"></div>
 </div>
 
-<audio id="jumpSound" src="https://assets.mixkit.co/sfx/preview/mixkit-game-jump-437.mp3"></audio>
-<audio id="crashSound" src="https://assets.mixkit.co/sfx/preview/mixkit-arcade-game-over-194.mp3"></audio>
+<audio id="jump" src="https://assets.mixkit.co/sfx/preview/mixkit-game-jump-437.mp3"></audio>
+<audio id="crash" src="https://assets.mixkit.co/sfx/preview/mixkit-arcade-game-over-194.mp3"></audio>
 
 <script>
-let rocket = document.getElementById("rocket");
-let game = document.getElementById("game");
+let rocket=document.getElementById("rocket");
+let game=document.getElementById("game");
 
-let score = 0;
-let gravity = 0;
-let jumping = false;
-let running = false;
-let paused = false;
-let speed = 6;
+let score=0,level=1;
+let gravity=0,jumping=false,running=false,paused=false;
+let speed=5,spawnRate=1500;
 
-/* CONTROLS */
-document.addEventListener("keydown", e => {
-  if(e.code === "Space") jump();
-  if(e.code === "KeyP") togglePause();
-  if(e.code === "KeyR") restartGame();
+let skins=[
+  "linear-gradient(cyan,blue)",
+  "linear-gradient(red,orange)",
+  "linear-gradient(lime,green)",
+  "linear-gradient(purple,pink)",
+  "linear-gradient(gold,orange)",
+  "linear-gradient(white,gray)",
+  "linear-gradient(deepskyblue,navy)",
+  "linear-gradient(crimson,black)",
+  "linear-gradient(aqua,teal)",
+  "linear-gradient(violet,indigo)"
+];
+
+rocket.style.background=localStorage.getItem("skin")||skins[0];
+
+let levelTypes=[];
+for(let i=1;i<=30;i++){
+  if(i<=10) levelTypes.push("wall");
+  else if(i<=20) levelTypes.push("tall");
+  else levelTypes.push("fly");
+}
+
+/* Build level buttons */
+let lg=document.getElementById("levelGrid");
+for(let i=1;i<=30;i++){
+  let b=document.createElement("button");
+  b.innerText=i;
+  b.onclick=(()=>{let l=i; return ()=>startGame(l);})();
+  lg.appendChild(b);
+}
+
+/* Build skins */
+let sg=document.getElementById("skinGrid");
+skins.forEach(s=>{
+  let b=document.createElement("button");
+  b.style.background=s;
+  b.style.width="50px";b.style.height="50px";
+  b.onclick=()=>{
+    rocket.style.background=s;
+    localStorage.setItem("skin",s);
+  };
+  sg.appendChild(b);
 });
 
-document.addEventListener("click", ()=>{ if(running && !paused) jump(); });
-
-function jump(){
-  if(!jumping && running && !paused){
-    gravity = 18;
-    jumping = true;
-    document.getElementById("jumpSound").play();
-  }
+/* Navigation */
+function showLevels(){hideAll();document.getElementById("levels").style.display="flex";}
+function showSkins(){hideAll();document.getElementById("skins").style.display="flex";}
+function back(){hideAll();document.getElementById("menu").style.display="flex";}
+function hideAll(){
+  document.querySelectorAll(".screen").forEach(s=>s.style.display="none");
 }
 
-/* GAME START */
-function startGame(){
-  document.getElementById("mainMenu").style.display="none";
-  running = true;
+/* Controls */
+document.addEventListener("keydown",e=>{
+  if(e.code==="Space") jump();
+  if(e.code==="KeyP") togglePause();
+  if(e.code==="KeyR") restart();
+});
+document.addEventListener("click",()=>{if(running&&!paused) jump();});
 
-  // Clear any old obstacles
+/* Game start */
+function startGame(l){
+  hideAll();
+  score=0;
+  level=l;
+  document.getElementById("level").innerText=level;
+  running=true;paused=false;
   document.querySelectorAll(".obstacle").forEach(o=>o.remove());
-
-  // Delay first obstacle so player is safe
-  setTimeout(spawnObstacle, 1200);
+  setTimeout(spawnObstacle,1000);
 }
 
-/* PHYSICS LOOP */
-setInterval(()=>{
-  if(!running || paused) return;
-
-  let bottom = parseInt(getComputedStyle(rocket).getPropertyValue("bottom"));
-  bottom += gravity;
-  gravity -= 1.2;
-
-  if(bottom <= 10){
-    bottom = 10;
-    jumping = false;
+/* Jump */
+function jump(){
+  if(!jumping&&running&&!paused){
+    gravity=18;
+    jumping=true;
+    document.getElementById("jump").play();
   }
+}
 
-  rocket.style.bottom = bottom+"px";
+/* Physics */
+setInterval(()=>{
+  if(!running||paused) return;
+  let b=parseInt(getComputedStyle(rocket).getPropertyValue("bottom"));
+  b+=gravity;
+  gravity-=1.2;
+  if(b<=0){b=0;jumping=false;}
+  rocket.style.bottom=b+"px";
 },20);
 
-/* OBSTACLES */
+/* Obstacles */
 function spawnObstacle(){
-  if(!running) return;
+  if(!running||paused) return;
+  let o=document.createElement("div");
+  let type=levelTypes[level-1];
+  o.className="obstacle "+type;
+  o.style.left="120%";
+  game.appendChild(o);
 
-  let obs = document.createElement("div");
-  obs.className = "obstacle";
-  obs.style.left = "120%";   // spawn further away
-
-  game.appendChild(obs);
-
-  let move = setInterval(()=>{
+  let move=setInterval(()=>{
     if(paused) return;
-
-    obs.style.left = obs.offsetLeft - speed + "px";
-
-    let r = rocket.getBoundingClientRect();
-    let o = obs.getBoundingClientRect();
-
-    if(r.right > o.left && r.left < o.right && r.bottom > o.top){
-      document.getElementById("crashSound").play();
-      endGame();
+    o.style.left=o.offsetLeft-speed+"px";
+    let r=rocket.getBoundingClientRect();
+    let ob=o.getBoundingClientRect();
+    if(r.right>ob.left&&r.left<ob.right&&r.bottom>ob.top){
+      document.getElementById("crash").play();
+      alert("Game Over");
+      restart();
     }
-
-    if(obs.offsetLeft < -50){
-      obs.remove();
+    if(o.offsetLeft<-50){
+      o.remove();
       clearInterval(move);
       score++;
-      document.getElementById("score").innerText = score;
+      document.getElementById("score").innerText=score;
     }
   },20);
 
-  setTimeout(spawnObstacle,1500);
+  setTimeout(spawnObstacle,spawnRate);
 }
 
-/* PAUSE */
-function togglePause(){
-  if(!running) return;
-  paused = !paused;
-  document.getElementById("pauseMenu").style.display = paused ? "flex" : "none";
-}
-
-function resumeGame(){
-  paused = false;
-  document.getElementById("pauseMenu").style.display="none";
-}
-
-/* END */
-function endGame(){
-  running = false;
-  alert("Game Over! Score: " + score);
-  location.reload();
-}
-
-function restartGame(){
-  location.reload();
-}
+/* Pause */
+function togglePause(){paused=!paused;}
+function restart(){location.reload();}
 </script>
 
 </body>

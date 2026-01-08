@@ -19,6 +19,16 @@ body{margin:0;background:black;color:white;font-family:Arial;overflow:hidden;}
 
 h1{font-size:64px;margin-bottom:10px;}
 
+#ground {
+  position: absolute;
+  bottom: 80px;
+  left: 0;
+  width: 100%;
+  height: 4px;
+  background: white;
+  z-index: 10;
+}
+
 #game{
   position:absolute;
   bottom:0;
@@ -73,6 +83,8 @@ button{
 
 <body>
 
+  <div id="ground"></div>
+
 <!-- MAIN MENU -->
 <div id="menu" class="screen">
   <h1>OB-MANIA</h1>
@@ -98,8 +110,8 @@ button{
 <div id="hud">
 Score: <span id="score">0</span> |
 Level: <span id="level">1</span>
-<button onclick="togglePause()">⏸</button>
-<button onclick="restart()">🔁</button>
+<button onclick="togglePause()">||</button>
+<button onclick="restart()">restart</button>
 </div>
 
 <div id="game">
@@ -110,6 +122,9 @@ Level: <span id="level">1</span>
 <audio id="crash" src="https://assets.mixkit.co/sfx/preview/mixkit-arcade-game-over-194.mp3"></audio>
 
 <script>
+
+const GROUND_Y = 80;
+
 let rocket=document.getElementById("rocket");
 let game=document.getElementById("game");
 
@@ -191,7 +206,7 @@ function startGame(l){
 /* Jump */
 function jump(){
   if(!jumping&&running&&!paused){
-    gravity=18;
+    gravity=10;
     jumping=true;
     document.getElementById("jump").play();
   }
@@ -204,8 +219,7 @@ setInterval(()=>{
   b+=gravity;
   gravity-=1.2;
   if(b<=0){b=0;jumping=false;}
-  rocket.style.bottom=b+"px";
-},20);
+  rocket.style.bottom = GROUND_Y + "px";
 
 /* Obstacles */
 function spawnObstacle(){

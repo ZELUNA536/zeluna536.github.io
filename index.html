@@ -41,12 +41,14 @@ button{
 
 /* GAME */
 #game{
+
   position:absolute;
   bottom:0;
   width:100vw;
   height:300px;
   border-top:3px solid white;
   overflow:hidden;
+  background:black;
 }
 
 /* ROCKET */
@@ -56,7 +58,7 @@ button{
   background:linear-gradient(cyan,blue);
   position:absolute;
   left:80px;
-  bottom:10px;
+  bottom:0;
   border-radius:8px;
 }
 
@@ -66,7 +68,7 @@ button{
   height:80px;
   background:red;
   position:absolute;
-  bottom:10px;
+  bottom:0;   /* aligns with the white line */
 }
 
 /* HUD */
@@ -136,7 +138,12 @@ function jump(){
 function startGame(){
   document.getElementById("mainMenu").style.display="none";
   running = true;
-  spawnObstacle();
+
+  // Clear any old obstacles
+  document.querySelectorAll(".obstacle").forEach(o=>o.remove());
+
+  // Delay first obstacle so player is safe
+  setTimeout(spawnObstacle, 1200);
 }
 
 /* PHYSICS LOOP */
@@ -161,7 +168,8 @@ function spawnObstacle(){
 
   let obs = document.createElement("div");
   obs.className = "obstacle";
-  obs.style.left = "100%";
+  obs.style.left = "120%";   // spawn further away
+
   game.appendChild(obs);
 
   let move = setInterval(()=>{

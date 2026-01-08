@@ -9,174 +9,205 @@ body{
   margin:0;
   background:black;
   color:white;
-  font-family:Arial;
+  font-family:Arial, Helvetica, sans-serif;
   overflow:hidden;
 }
-#menu,#pauseMenu{
-  position:absolute;
+
+/* MENUS */
+.screen{
+  position:fixed;
   inset:0;
   background:black;
   display:flex;
   flex-direction:column;
   justify-content:center;
   align-items:center;
-  z-index:10;
+  z-index:100;
 }
+
+h1{
+  font-size:64px;
+  margin-bottom:20px;
+}
+
 button{
   padding:15px 40px;
   margin:10px;
+  font-size:18px;
   border:none;
   border-radius:30px;
-  font-size:18px;
   cursor:pointer;
 }
+
+/* GAME */
 #game{
+  position:absolute;
+  bottom:0;
   width:100vw;
   height:300px;
-  position:relative;
+  border-top:3px solid white;
   overflow:hidden;
-  border-bottom:3px solid white;
 }
+
+/* ROCKET */
 #rocket{
   width:40px;
   height:60px;
-  position:absolute;
-  bottom:10px;
-  left:80px;
   background:linear-gradient(cyan,blue);
+  position:absolute;
+  left:80px;
+  bottom:10px;
   border-radius:8px;
 }
+
+/* OBSTACLE */
 .obstacle{
+  width:40px;
+  height:80px;
+  background:red;
   position:absolute;
   bottom:10px;
 }
-.wall{width:40px;height:80px;background:red;}
-.tall{width:40px;height:130px;background:orange;}
-.fly{width:40px;height:40px;background:yellow;bottom:120px;}
-.spin{width:40px;height:40px;background:purple;animation:spin 1s linear infinite;}
-@keyframes spin{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}
+
+/* HUD */
 #hud{
-  position:absolute;
+  position:fixed;
   top:10px;
   left:10px;
+  z-index:10;
+  font-size:18px;
 }
 </style>
 </head>
 
 <body>
 
-<div id="menu">
-<h1>OB-MANIA</h1>
-<button onclick="startGame()">PLAY</button>
+<div id="mainMenu" class="screen">
+  <h1>OB-MANIA</h1>
+  <button onclick="startGame()">PLAY</button>
 </div>
 
-<div id="pauseMenu" style="display:none">
-<h2>Paused</h2>
-<button onclick="resume()">Resume</button>
-<button onclick="restart()">Restart</button>
+<div id="pauseMenu" class="screen" style="display:none">
+  <h2>Paused</h2>
+  <button onclick="resumeGame()">Resume (P)</button>
+  <button onclick="restartGame()">Restart (R)</button>
 </div>
 
 <div id="hud">
-Score: <span id="score">0</span> |
-Level: <span id="level">1</span>
-<button onclick="pause()">⏸</button>
-<button onclick="restart()">🔁</button>
+  Score: <span id="score">0</span>
 </div>
 
 <div id="game">
-<div id="rocket"></div>
+  <div id="rocket"></div>
 </div>
 
-<audio id="jump" src="https://assets.mixkit.co/sfx/preview/mixkit-game-jump-437.mp3"></audio>
-<audio id="crash" src="https://assets.mixkit.co/sfx/preview/mixkit-arcade-game-over-194.mp3"></audio>
+<audio id="jumpSound" src="https://assets.mixkit.co/sfx/preview/mixkit-game-jump-437.mp3"></audio>
+<audio id="crashSound" src="https://assets.mixkit.co/sfx/preview/mixkit-arcade-game-over-194.mp3"></audio>
 
 <script>
-let rocket=document.getElementById("rocket");
-let game=document.getElementById("game");
-let score=0,level=1;
-let gravity=0,jumping=false,running=false,paused=false;
-let speed=4,spawnRate=1600;
+let rocket = document.getElementById("rocket");
+let game = document.getElementById("game");
 
-function startGame(){
-  document.getElementById("menu").style.display="none";
-  running=true;
-  spawnObstacle();
-}
+let score = 0;
+let gravity = 0;
+let jumping = false;
+let running = false;
+let paused = false;
+let speed = 6;
+
+/* CONTROLS */
+document.addEventListener("keydown", e => {
+  if(e.code === "Space") jump();
+  if(e.code === "KeyP") togglePause();
+  if(e.code === "KeyR") restartGame();
+});
+
+document.addEventListener("click", ()=>{ if(running && !paused) jump(); });
 
 function jump(){
   if(!jumping && running && !paused){
-    gravity=18;
-    jumping=true;
-    document.getElementById("jump").play();
+    gravity = 18;
+    jumping = true;
+    document.getElementById("jumpSound").play();
   }
 }
-document.addEventListener("keydown",e=>{
-  if(e.code==="Space") jump();
-  if(e.code==="KeyP") pause();
-});
-document.addEventListener("click",jump);
 
+/* GAME START */
+function startGame(){
+  document.getElementById("mainMenu").style.display="none";
+  running = true;
+  spawnObstacle();
+}
+
+/* PHYSICS LOOP */
 setInterval(()=>{
   if(!running || paused) return;
-  let b=parseInt(getComputedStyle(rocket).getPropertyValue("bottom"));
-  b+=gravity;
-  gravity-=1.2;
-  if(b<=10){b=10;jumping=false;}
-  rocket.style.bottom=b+"px";
+
+  let bottom = parseInt(getComputedStyle(rocket).getPropertyValue("bottom"));
+  bottom += gravity;
+  gravity -= 1.2;
+
+  if(bottom <= 10){
+    bottom = 10;
+    jumping = false;
+  }
+
+  rocket.style.bottom = bottom+"px";
 },20);
 
+/* OBSTACLES */
 function spawnObstacle(){
-  if(!running || paused) return;
-  let o=document.createElement("div");
-  let types=["wall","tall","fly","spin"];
-  let type=types[Math.min(level-1,types.length-1)];
-  o.className="obstacle "+type;
-  o.style.left="100%";
-  game.appendChild(o);
+  if(!running) return;
 
-  let move=setInterval(()=>{
+  let obs = document.createElement("div");
+  obs.className = "obstacle";
+  obs.style.left = "100%";
+  game.appendChild(obs);
+
+  let move = setInterval(()=>{
     if(paused) return;
-    o.style.left=o.offsetLeft-speed*5+"px";
 
-    let r=rocket.getBoundingClientRect();
-    let ob=o.getBoundingClientRect();
-    if(r.right>ob.left && r.left<ob.right && r.bottom>ob.top){
-      document.getElementById("crash").play();
-      alert("Game Over");
-      location.reload();
+    obs.style.left = obs.offsetLeft - speed + "px";
+
+    let r = rocket.getBoundingClientRect();
+    let o = obs.getBoundingClientRect();
+
+    if(r.right > o.left && r.left < o.right && r.bottom > o.top){
+      document.getElementById("crashSound").play();
+      endGame();
     }
 
-    if(o.offsetLeft<-50){
-      o.remove();
+    if(obs.offsetLeft < -50){
+      obs.remove();
       clearInterval(move);
       score++;
-      document.getElementById("score").innerText=score;
-      updateLevel();
+      document.getElementById("score").innerText = score;
     }
   },20);
 
-  setTimeout(spawnObstacle,spawnRate);
+  setTimeout(spawnObstacle,1500);
 }
 
-function updateLevel(){
-  let newLevel=Math.min(10,Math.floor(score/5)+1);
-  if(newLevel!=level){
-    level=newLevel;
-    speed+=1;
-    spawnRate=Math.max(700,spawnRate-120);
-    document.getElementById("level").innerText=level;
-  }
+/* PAUSE */
+function togglePause(){
+  if(!running) return;
+  paused = !paused;
+  document.getElementById("pauseMenu").style.display = paused ? "flex" : "none";
 }
 
-function pause(){
-  paused=true;
-  document.getElementById("pauseMenu").style.display="flex";
-}
-function resume(){
-  paused=false;
+function resumeGame(){
+  paused = false;
   document.getElementById("pauseMenu").style.display="none";
 }
-function restart(){
+
+/* END */
+function endGame(){
+  running = false;
+  alert("Game Over! Score: " + score);
+  location.reload();
+}
+
+function restartGame(){
   location.reload();
 }
 </script>

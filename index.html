@@ -1,306 +1,150 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>OB-MANIA</title>
-<link rel="icon" href="https://cdn-icons-png.flaticon.com/512/3212/3212608.png">
-
+<title>ECHO SHIFT: SECTION 9</title>
 <style>
-body{
-  margin:0;
-  background:black;
-  color:white;
-  font-family:Arial;
-  overflow:hidden;
-}
-
-.screen{
-  position:fixed;
-  inset:0;
-  background:black;
-  display:flex;
-  flex-direction:column;
-  justify-content:center;
-  align-items:center;
-  z-index:10;
-}
-
-h1{font-size:64px;margin:10px;}
-
-#ground{
-  position:absolute;
-  bottom:80px;
-  width:100%;
-  height:4px;
-  background:white;
-}
-
-#game{
-  position:absolute;
-  bottom:0;
-  width:100vw;
-  height:300px;
-  overflow:hidden;
-}
-
-#rocket{
-  width:40px;
-  height:60px;
-  position:absolute;
-  left:80px;
-  bottom:80px;
-  border-radius:8px;
-}
-
-.obstacle{
-  position:absolute;
-}
-
-.wall{width:40px;height:80px;background:red;}
-.tall{width:40px;height:130px;background:orange;}
-.fly{width:40px;height:40px;background:yellow;}
-.spin{width:40px;height:40px;background:purple;animation:spin 1s linear infinite;}
-
-@keyframes spin{
-  from{transform:rotate(0deg);}
-  to{transform:rotate(360deg);}
-}
-
-button{
-  padding:10px 25px;
-  margin:5px;
-  border:none;
-  border-radius:20px;
-  cursor:pointer;
-}
-
-.grid{
-  display:grid;
-  grid-template-columns:repeat(6,auto);
-  gap:10px;
-}
-
+html,body{margin:0;overflow:hidden;background:black;font-family:Arial}
 #hud{
-  position:fixed;
-  top:10px;
-  left:10px;
-  z-index:5;
-}
+position:fixed;bottom:15px;left:50%;transform:translateX(-50%);
+background:linear-gradient(90deg,#0f2027,#203a43,#2c5364);
+padding:10px 20px;border-radius:20px;color:white;
+display:flex;gap:15px;font-size:12px;opacity:.85}
+#intro{
+position:fixed;inset:0;background:black;display:flex;
+align-items:center;justify-content:center;color:white;z-index:5}
+#intro h1{font-size:60px;letter-spacing:6px}
+#subtitle{
+position:fixed;bottom:80px;width:100%;text-align:center;
+color:white;font-size:18px;opacity:.8}
+canvas{display:block}
 </style>
 </head>
-
 <body>
 
-<div id="ground"></div>
-
-<!-- MENU -->
-<div id="menu" class="screen">
-  <h1>OB-MANIA</h1>
-  <button onclick="showLevels()">Play</button>
-  <button onclick="showSkins()">Skins</button>
+<div id="intro">
+<div>
+<h1>ECHO SHIFT</h1>
+<p>If you're hearing this... you already entered.</p>
+<p>Click to wake up</p>
+</div>
 </div>
 
-<!-- LEVELS -->
-<div id="levels" class="screen" style="display:none">
-  <h2>Select Level</h2>
-  <div class="grid" id="levelGrid"></div>
-  <button onclick="back()">Back</button>
-</div>
+<div id="subtitle"></div>
 
-<!-- SKINS -->
-<div id="skins" class="screen" style="display:none">
-  <h2>Select Rocket</h2>
-  <div class="grid" id="skinGrid"></div>
-  <button onclick="back()">Back</button>
-</div>
-
-<!-- HUD -->
 <div id="hud">
-Score: <span id="score">0</span> |
-Level: <span id="level">1</span>
-<button onclick="togglePause()">⏸</button>
-<button onclick="restart()">⟲</button>
+<div>WASD Move</div>
+<div>Mouse Look</div>
+<div>Shift Run</div>
+<div>F Interact</div>
+<div>T Torch</div>
+<div>M Switch Body</div>
 </div>
 
-<div id="game">
-  <div id="rocket"></div>
-</div>
+<canvas id="game"></canvas>
 
-<audio id="jump" src="https://assets.mixkit.co/sfx/preview/mixkit-game-jump-437.mp3"></audio>
-<audio id="crash" src="https://assets.mixkit.co/sfx/preview/mixkit-arcade-game-over-194.mp3"></audio>
+<audio id="amb" loop src="https://cdn.pixabay.com/audio/2022/03/15/audio_5b7c46b0a3.mp3"></audio>
+<audio id="step" src="https://cdn.pixabay.com/audio/2022/02/23/audio_53c1a98c59.mp3"></audio>
 
 <script>
-/* CONSTANTS */
-const GROUND_Y = 80;
+const canvas=document.getElementById("game");
+const ctx=canvas.getContext("2d");
+canvas.width=innerWidth;canvas.height=innerHeight;
 
-/* ELEMENTS */
-const rocket = document.getElementById("rocket");
-const game = document.getElementById("game");
+let keys={},yaw=0,pitch=0;
+let torch=false,body="male";
+let fear=0;
 
-/* GAME STATE */
-let score = 0;
-let level = 1;
-let gravity = 0;
-let jumping = false;
-let running = false;
-let paused = false;
-let speed = 6;
-let spawnRate = 1400;
+let player={x:0,z:0,speed:2};
+let enemy={x:20,z:20,active:true};
 
-/* SKINS */
-const skins = [
-  "linear-gradient(cyan,blue)",
-  "linear-gradient(red,orange)",
-  "linear-gradient(lime,green)",
-  "linear-gradient(purple,pink)",
-  "linear-gradient(gold,orange)",
-  "linear-gradient(white,gray)",
-  "linear-gradient(deepskyblue,navy)",
-  "linear-gradient(crimson,black)",
-  "linear-gradient(aqua,teal)",
-  "linear-gradient(violet,indigo)"
-];
-
-rocket.style.background = localStorage.getItem("skin") || skins[0];
-
-/* LEVEL TYPES */
-const levelTypes = [];
-for(let i=1;i<=30;i++){
-  if(i<=10) levelTypes.push("wall");
-  else if(i<=20) levelTypes.push("tall");
-  else levelTypes.push("fly");
+function subtitle(text){
+let s=document.getElementById("subtitle");
+s.innerText=text;
+setTimeout(()=>s.innerText="",3000);
 }
 
-/* BUILD LEVEL BUTTONS */
-const lg = document.getElementById("levelGrid");
-for(let i=1;i<=30;i++){
-  const b = document.createElement("button");
-  b.innerText = i;
-  b.onclick = () => startGame(i);
-  lg.appendChild(b);
+function drawWorld(){
+ctx.fillStyle="black";
+ctx.fillRect(0,0,canvas.width,canvas.height);
+
+// fog
+ctx.fillStyle="rgba(30,30,40,0.4)";
+ctx.fillRect(0,0,canvas.width,canvas.height);
+
+// flashlight
+if(torch){
+let g=ctx.createRadialGradient(
+canvas.width/2,canvas.height/2,50,
+canvas.width/2,canvas.height/2,300);
+g.addColorStop(0,"rgba(255,255,200,0.4)");
+g.addColorStop(1,"rgba(0,0,0,0)");
+ctx.fillStyle=g;
+ctx.fillRect(0,0,canvas.width,canvas.height);
 }
 
-/* BUILD SKINS */
-const sg = document.getElementById("skinGrid");
-skins.forEach(s=>{
-  const b = document.createElement("button");
-  b.style.background = s;
-  b.style.width = "50px";
-  b.style.height = "50px";
-  b.onclick = () => {
-    rocket.style.background = s;
-    localStorage.setItem("skin", s);
-  };
-  sg.appendChild(b);
-});
-
-/* NAVIGATION */
-function showLevels(){hideAll();levels.style.display="flex";}
-function showSkins(){hideAll();skinsDiv.style.display="flex";}
-function back(){hideAll();menu.style.display="flex";}
-function hideAll(){document.querySelectorAll(".screen").forEach(s=>s.style.display="none");}
-
-/* CONTROLS */
-document.addEventListener("keydown",e=>{
-  if(e.code==="Space") jump();
-  if(e.code==="KeyP") togglePause();
-  if(e.code==="KeyR") restart();
-});
-document.addEventListener("click",()=>{if(running&&!paused) jump();});
-
-/* START GAME */
-function startGame(l){
-  hideAll();
-  level = l;
-  score = 0;
-  running = true;
-  paused = false;
-
-  speed = 6 + Math.floor(level/3);
-  spawnRate = 1400 - level * 20;
-
-  document.getElementById("level").innerText = level;
-  document.getElementById("score").innerText = score;
-
-  document.querySelectorAll(".obstacle").forEach(o=>o.remove());
-  setTimeout(spawnObstacle, 800);
+// enemy
+let dx=enemy.x-player.x;
+let dz=enemy.z-player.z;
+let dist=Math.sqrt(dx*dx+dz*dz);
+if(dist<30){
+let size=200/dist;
+ctx.fillStyle="rgba(255,0,0,0.6)";
+ctx.beginPath();
+ctx.arc(canvas.width/2+dx*10,canvas.height/2+dz*10,size,0,Math.PI*2);
+ctx.fill();
+fear+=0.05;
+}
 }
 
-/* JUMP */
-function jump(){
-  if(!jumping && running && !paused){
-    gravity = 14;
-    jumping = true;
-    document.getElementById("jump").play();
-  }
+function update(){
+let sp=keys["shift"]?4:2;
+if(keys["w"])player.z-=sp;
+if(keys["s"])player.z+=sp;
+if(keys["a"])player.x-=sp;
+if(keys["d"])player.x+=sp;
+
+// enemy stalk
+if(enemy.active){
+enemy.x+=(player.x-enemy.x)*0.002;
+enemy.z+=(player.z-enemy.z)*0.002;
 }
 
-/* PHYSICS LOOP */
-setInterval(()=>{
-  if(!running || paused) return;
-
-  let b = parseInt(getComputedStyle(rocket).bottom);
-  b += gravity;
-  gravity -= 1.2;
-
-  if(b <= GROUND_Y){
-    b = GROUND_Y;
-    jumping = false;
-  }
-
-  rocket.style.bottom = b + "px";
-},20);
-
-/* OBSTACLES */
-function spawnObstacle(){
-  if(!running || paused) return;
-
-  const o = document.createElement("div");
-  const type = levelTypes[level-1];
-  o.className = "obstacle " + type;
-  o.style.left = "100%";
-
-  if(type==="fly"){
-    o.style.bottom = (GROUND_Y + 120) + "px";
-  }else{
-    o.style.bottom = GROUND_Y + "px";
-  }
-
-  game.appendChild(o);
-
-  const move = setInterval(()=>{
-    if(paused) return;
-
-    o.style.left = o.offsetLeft - speed + "px";
-
-    const r = rocket.getBoundingClientRect();
-    const ob = o.getBoundingClientRect();
-
-    if(
-      r.right > ob.left &&
-      r.left < ob.right &&
-      r.bottom > ob.top &&
-      r.top < ob.bottom
-    ){
-      document.getElementById("crash").play();
-      alert("Game Over");
-      restart();
-    }
-
-    if(o.offsetLeft < -50){
-      clearInterval(move);
-      o.remove();
-      score++;
-      document.getElementById("score").innerText = score;
-    }
-  },20);
-
-  setTimeout(spawnObstacle, spawnRate);
+if(fear>50){
+subtitle("Your mind is not yours anymore...");
+enemy.active=true;
+}
 }
 
-/* PAUSE / RESTART */
-function togglePause(){paused = !paused;}
-function restart(){location.reload();}
+function loop(){
+update();
+drawWorld();
+requestAnimationFrame(loop);
+}
+
+// controls
+onkeydown=e=>{
+keys[e.key.toLowerCase()]=true;
+if(e.key=="t"){torch=!torch}
+if(e.key=="m"){
+body=body=="male"?"female":"male";
+subtitle("Body switched: "+body);
+}
+}
+onkeyup=e=>keys[e.key.toLowerCase()]=false;
+
+onmousemove=e=>{
+yaw+=e.movementX*0.002;
+pitch+=e.movementY*0.002;
+}
+
+// intro
+document.getElementById("intro").onclick=()=>{
+document.getElementById("intro").style.display="none";
+document.getElementById("amb").play();
+canvas.requestPointerLock();
+subtitle("Subject 09 regained consciousness");
+loop();
+}
 </script>
-
 </body>
 </html>

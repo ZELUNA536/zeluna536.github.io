@@ -2,58 +2,78 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>PROJECT: SYNTHETIC ECHO | TPP MASTERPIECE</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PROJECT: SYNTHETIC ECHO | MASTERPIECE</title>
     <style>
         :root {
-            --neon: #00f3ff;
-            --danger: #ff3131;
-            --grad: linear-gradient(135deg, #00f3ff, #ff00ff);
+            --glitch-red: #ff3131;
+            --neon-blue: #00f3ff;
+            --dark-bg: #050505;
         }
 
-        body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: #000; font-family: 'Segoe UI', sans-serif; }
+        body, html { 
+            margin: 0; padding: 0; width: 100%; height: 100%; 
+            overflow: hidden; background: #000; color: #fff;
+            font-family: 'Courier New', Courier, monospace;
+        }
 
-        /* UI Layering */
-        #ui-container { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 100; color: white; }
-        
-        /* Menu & Settings */
-        .overlay-screen {
+        #crt-overlay {
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.1) 50%), 
+                        linear-gradient(90deg, rgba(255, 0, 0, 0.03), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.03));
+            background-size: 100% 3px, 3px 100%; 
+            pointer-events: none; 
+            z-index: 5000;
+        }
+
+        #main-menu {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: radial-gradient(circle, rgba(20,20,25,0.9) 0%, #050505 100%);
+            background: radial-gradient(circle, #111 0%, #000 100%);
             display: flex; flex-direction: column; align-items: center; justify-content: center;
-            z-index: 2000; pointer-events: all; transition: 0.5s;
+            z-index: 4000;
+            transition: opacity 1s ease;
+            pointer-events: all;
         }
 
-        .glass-panel {
-            background: rgba(255, 255, 255, 0.05); backdrop-filter: blur(15px);
-            padding: 40px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.1);
-            text-align: center; box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+        .glitch-title {
+            font-size: clamp(2rem, 8vw, 5rem); font-weight: 900; 
+            color: white; text-transform: uppercase;
+            text-shadow: 2px 0 var(--glitch-red), -2px 0 var(--neon-blue);
+            margin-bottom: 10px;
         }
 
-        .glitch-text {
-            font-size: 4rem; font-weight: 900; background: var(--grad);
-            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-            margin-bottom: 20px; text-transform: uppercase; letter-spacing: 5px;
+        .btn-start {
+            background: transparent; border: 2px solid var(--neon-blue);
+            color: var(--neon-blue); padding: 15px 40px; font-size: 1.5rem;
+            cursor: pointer; transition: 0.3s; font-family: inherit;
+            margin-top: 30px; text-transform: uppercase;
+            box-shadow: 0 0 15px rgba(0, 243, 255, 0.2);
         }
 
-        .btn {
-            background: var(--grad); border: none; color: white; padding: 15px 40px;
-            font-size: 1.2rem; border-radius: 50px; cursor: pointer; font-weight: bold;
-            transition: 0.3s; margin: 10px; text-transform: uppercase;
+        .btn-start:hover {
+            background: var(--neon-blue); color: #000;
+            box-shadow: 0 0 30px var(--neon-blue);
         }
-        .btn:hover { transform: scale(1.1); box-shadow: 0 0 30px var(--neon); }
 
-        /* Shortcuts Legend */
-        #shortcuts-bar {
-            position: absolute; bottom: 0; width: 100%;
-            background: linear-gradient(to top, rgba(0,0,0,0.8), transparent);
-            padding: 20px; display: flex; justify-content: center; gap: 30px;
+        #gui-wrapper {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none; z-index: 1000; display: none;
+            flex-direction: column; justify-content: space-between;
         }
-        .key-box { background: rgba(255,255,255,0.1); padding: 5px 12px; border-radius: 5px; border-bottom: 3px solid var(--neon); margin-right: 5px; }
 
-        /* Settings Icon */
-        #settings-trigger {
-            position: absolute; top: 20px; right: 20px; pointer-events: all;
-            cursor: pointer; font-size: 24px; opacity: 0.7;
+        #controls-legend {
+            background: linear-gradient(transparent, rgba(0,0,0,0.95));
+            padding: 25px; display: flex; justify-content: center; gap: 30px;
+            font-size: 11px; letter-spacing: 1.5px; color: #666;
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .key-hint { color: #fff; font-weight: bold; background: #222; padding: 2px 6px; border-radius: 3px; border: 1px solid #444; }
+
+        #subtitles {
+            position: absolute; bottom: 120px; width: 100%; text-align: center;
+            font-size: 22px; color: #fff; text-shadow: 0 0 10px #000;
+            font-weight: 300; opacity: 0; transition: opacity 0.5s;
         }
 
         canvas { display: block; }
@@ -61,200 +81,240 @@
 </head>
 <body>
 
-<div id="main-menu" class="overlay-screen">
-    <div class="glass-panel">
-        <div class="glitch-text">SYNTHETIC ECHO</div>
-        <div style="margin-bottom: 20px;">
-            <select id="gender" class="btn" style="font-size: 0.9rem; padding: 10px 20px;">
-                <option value="F">FEMALE AVATAR</option>
-                <option value="M">MALE AVATAR</option>
+<div id="crt-overlay"></div>
+
+<div id="main-menu">
+    <div class="glitch-title">SYNTHETIC ECHO</div>
+    <div style="color: #444; letter-spacing: 5px;">RATING: 16+ | HORROR</div>
+    
+    <div style="margin-top: 40px; display: flex; gap: 20px;">
+        <div>
+            <span style="font-size: 10px; display: block; color: var(--neon-blue);">AVATAR</span>
+            <select id="gender-select" style="background:#000; color:#fff; border:1px solid #333; padding:5px;">
+                <option value="F">PROTOCOL-FEMALE</option>
+                <option value="M">PROTOCOL-MALE</option>
             </select>
         </div>
-        <button class="btn" onclick="startGame()">Initialize Facility</button>
+        <div>
+            <span style="font-size: 10px; display: block; color: var(--neon-blue);">WEATHER</span>
+            <select id="weather-select" style="background:#000; color:#fff; border:1px solid #333; padding:5px;">
+                <option value="rain">INDUSTRIAL RAIN</option>
+                <option value="fog">VOID FOG</option>
+            </select>
+        </div>
     </div>
+
+    <button class="btn-start" onclick="enterFacility()">Enter Facility</button>
 </div>
 
-<div id="settings-menu" class="overlay-screen" style="display: none; background: rgba(0,0,0,0.85);">
-    <div class="glass-panel">
-        <h2>ENGINE SETTINGS</h2>
-        <p>FOV: <input type="range" id="fov-range" min="50" max="110" value="75"></p>
-        <p>WEATHER: 
-            <button onclick="setWeather('clear')">CLEAR</button>
-            <button onclick="setWeather('storm')">STORM</button>
-        </p>
-        <button class="btn" onclick="toggleSettings()">BACK TO GAME</button>
-        <button class="btn" style="background: var(--danger);" onclick="location.reload()">REPLAY / RESET</button>
-    </div>
-</div>
-
-<div id="ui-container">
-    <div id="settings-trigger" onclick="toggleSettings()">⚙ SETTINGS</div>
-    <div id="shortcuts-bar">
-        <span><span class="key-box">W A S D</span> WALK</span>
-        <span><span class="key-box">SHIFT</span> SPRINT</span>
-        <span><span class="key-box">SPACE</span> JUMP</span>
-        <span><span class="key-box">F</span> FLASHLIGHT</span>
-        <span><span class="key-box">V</span> SWITCH CAMERA</span>
+<div id="gui-wrapper">
+    <div id="subtitles"></div>
+    <div id="controls-legend">
+        <span><span class="key-hint">W A S D</span> MOVE</span>
+        <span><span class="key-hint">F</span> FLASHLIGHT</span>
+        <span><span class="key-hint">V</span> CAMERA VIEW</span>
+        <span><span class="key-hint">C</span> CROUCH</span>
+        <span><span class="key-hint">SHIFT</span> SPRINT</span>
     </div>
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 
 <script>
-let scene, camera, renderer, player, clock, flashLight;
-let moveForward = false, moveBackward = false, moveLeft = false, moveRight = false;
-let velocity = new THREE.Vector3();
-let direction = new THREE.Vector3();
-let isThirdPerson = true;
-
-function startGame() {
-    document.getElementById('main-menu').style.opacity = '0';
-    setTimeout(() => {
-        document.getElementById('main-menu').style.display = 'none';
-        init();
-        animate();
-    }, 500);
-}
-
-function init() {
-    clock = new THREE.Clock();
-    scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x0a0a12);
-    scene.fog = new THREE.FogExp2(0x0a0a12, 0.03);
-
-    camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+    let scene, camera, renderer, flashLight, clock, playerBox;
+    let moveForward = false, moveBackward = false, moveLeft = false, moveRight = false;
+    let velocity = new THREE.Vector3();
+    let direction = new THREE.Vector3();
+    let isCrouching = false;
+    let rainSystem;
     
-    renderer = new THREE.WebGLRenderer({ antialias: true });
-    renderer.setSize(window.innerWidth, window.innerHeight);
-    renderer.shadowMap.enabled = true;
-    renderer.outputEncoding = THREE.sRGBEncoding;
-    document.body.appendChild(renderer.domElement);
+    // Camera View Modes: 0 = FPS, 1 = Third Person, 2 = Cinematic
+    let viewMode = 0;
 
-    // Dynamic Lighting
-    const hemi = new THREE.HemisphereLight(0x4444ff, 0x000000, 0.6);
-    scene.add(hemi);
-
-    // Player Model (The Character)
-    const gender = document.getElementById('gender').value;
-    const playerGeo = new THREE.CapsuleGeometry(0.4, 1, 4, 8);
-    const playerMat = new THREE.MeshStandardMaterial({ 
-        color: gender === 'F' ? 0xff00ff : 0x00ffff,
-        metalness: 0.8, roughness: 0.2 
-    });
-    player = new THREE.Mesh(playerGeo, playerMat);
-    player.position.y = 1;
-    player.castShadow = true;
-    scene.add(player);
-
-    // Flashlight
-    flashLight = new THREE.SpotLight(0xffffff, 4, 40, 0.5, 0.3, 2);
-    flashLight.castShadow = true;
-    player.add(flashLight);
-    flashLight.position.set(0, 0.5, 0.5);
-    flashLight.target.position.set(0, 0.5, 5);
-    player.add(flashLight.target);
-
-    // Environment
-    const floorGeo = new THREE.PlaneGeometry(1000, 1000);
-    const floorMat = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.1, metalness: 0.5 });
-    const floor = new THREE.Mesh(floorGeo, floorMat);
-    floor.rotation.x = -Math.PI / 2;
-    floor.receiveShadow = true;
-    scene.add(floor);
-
-    // Industrial Pillars (Visibility fix)
-    const pillarGeo = new THREE.BoxGeometry(2, 15, 2);
-    const pillarMat = new THREE.MeshStandardMaterial({ color: 0x222222 });
-    for(let i=0; i<40; i++) {
-        const p = new THREE.Mesh(pillarGeo, pillarMat);
-        p.position.set(Math.sin(i)*20, 7.5, -i*10);
-        p.castShadow = true; p.receiveShadow = true;
-        scene.add(p);
+    function enterFacility() {
+        const menu = document.getElementById('main-menu');
+        menu.style.opacity = '0';
+        setTimeout(() => {
+            menu.style.display = 'none';
+            document.getElementById('gui-wrapper').style.display = 'flex';
+            initEngine();
+            animate();
+            playSequence();
+        }, 1000);
     }
 
-    // Controls
-    window.addEventListener('keydown', (e) => {
-        if(e.code === 'KeyW') moveForward = true;
-        if(e.code === 'KeyS') moveBackward = true;
-        if(e.code === 'KeyA') moveLeft = true;
-        if(e.code === 'KeyD') moveRight = true;
-        if(e.code === 'KeyF') flashLight.intensity = flashLight.intensity ? 0 : 4;
-        if(e.code === 'KeyV') isThirdPerson = !isThirdPerson;
-    });
-    window.addEventListener('keyup', (e) => {
-        if(e.code === 'KeyW') moveForward = false;
-        if(e.code === 'KeyS') moveBackward = false;
-        if(e.code === 'KeyA') moveLeft = false;
-        if(e.code === 'KeyD') moveRight = false;
-    });
+    function initEngine() {
+        clock = new THREE.Clock();
+        scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x020202);
+        scene.fog = new THREE.FogExp2(0x020202, 0.05);
 
-    document.body.addEventListener('click', () => {
-        if(document.getElementById('main-menu').style.display === 'none') {
-            document.body.requestPointerLock();
+        camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        
+        // Player Body Placeholder (Required for Third Person View)
+        const playerGeo = new THREE.BoxGeometry(0.6, 1.8, 0.6);
+        const playerMat = new THREE.MeshStandardMaterial({ color: 0x333333 });
+        playerBox = new THREE.Mesh(playerGeo, playerMat);
+        playerBox.position.set(0, 0.9, 0);
+        playerBox.castShadow = true;
+        scene.add(playerBox);
+
+        renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        document.body.appendChild(renderer.domElement);
+
+        // SUPER BRIGHT FLASHLIGHT (BOOSTED)
+        flashLight = new THREE.SpotLight(0xffffff, 8, 80, Math.PI/6, 0.3, 1);
+        flashLight.castShadow = true;
+        flashLight.shadow.mapSize.width = 2048;
+        flashLight.shadow.mapSize.height = 2048;
+        
+        // Attach light to player box for all views
+        playerBox.add(flashLight);
+        flashLight.position.set(0, 0.6, 0);
+        
+        // Target for the light
+        const lightTarget = new THREE.Object3D();
+        playerBox.add(lightTarget);
+        lightTarget.position.set(0, 0.6, -5);
+        flashLight.target = lightTarget;
+
+        scene.add(new THREE.AmbientLight(0x050505));
+
+        buildEnvironment();
+        if(document.getElementById('weather-select').value === 'rain') initRain();
+
+        window.addEventListener('keydown', onKeyDown);
+        window.addEventListener('keyup', onKeyUp);
+        document.body.addEventListener('click', () => document.body.requestPointerLock());
+        window.addEventListener('mousemove', onMouseMove);
+    }
+
+    function buildEnvironment() {
+        const floorGeo = new THREE.PlaneGeometry(2000, 2000);
+        const floorMat = new THREE.MeshStandardMaterial({ color: 0x0a0a0a, roughness: 0.1, metalness: 0.4 });
+        const floor = new THREE.Mesh(floorGeo, floorMat);
+        floor.rotation.x = -Math.PI / 2;
+        floor.receiveShadow = true;
+        scene.add(floor);
+
+        const wallMat = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.9 });
+        for(let i=0; i<40; i++) {
+            const pillar = new THREE.Mesh(new THREE.BoxGeometry(2, 15, 2), wallMat);
+            pillar.position.set(i % 2 === 0 ? 12 : -12, 7.5, -i * 15);
+            pillar.castShadow = true;
+            pillar.receiveShadow = true;
+            scene.add(pillar);
         }
-    });
+    }
 
-    window.addEventListener('mousemove', (e) => {
+    function initRain() {
+        const geometry = new THREE.BufferGeometry();
+        const vertices = [];
+        for (let i = 0; i < 15000; i++) {
+            vertices.push(Math.random() * 200 - 100, Math.random() * 50, Math.random() * 200 - 100);
+        }
+        geometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
+        rainSystem = new THREE.Points(geometry, new THREE.PointsMaterial({ color: 0x444444, size: 0.08 }));
+        scene.add(rainSystem);
+    }
+
+    function playSequence() {
+        const sub = document.getElementById('subtitles');
+        sub.innerText = "LINK ESTABLISHED. PRESS 'V' TO SWITCH VIEWS.";
+        sub.style.opacity = 1;
+        setTimeout(() => sub.style.opacity = 0, 4000);
+    }
+
+    function onKeyDown(e) {
+        switch(e.code) {
+            case 'KeyW': moveForward = true; break;
+            case 'KeyS': moveBackward = true; break;
+            case 'KeyA': moveLeft = true; break;
+            case 'KeyD': moveRight = true; break;
+            case 'KeyF': flashLight.intensity = flashLight.intensity === 0 ? 8 : 0; break;
+            case 'KeyV': 
+                viewMode = (viewMode + 1) % 3; 
+                if(viewMode === 0) playerBox.visible = false; // Hide body in FPS
+                else playerBox.visible = true;
+                break;
+            case 'KeyC': isCrouching = true; break;
+        }
+    }
+
+    function onKeyUp(e) {
+        switch(e.code) {
+            case 'KeyW': moveForward = false; break;
+            case 'KeyS': moveBackward = false; break;
+            case 'KeyA': moveLeft = false; break;
+            case 'KeyD': moveRight = false; break;
+            case 'KeyC': isCrouching = false; break;
+        }
+    }
+
+    function onMouseMove(e) {
         if(document.pointerLockElement === document.body) {
-            player.rotation.y -= e.movementX * 0.003;
+            playerBox.rotation.y -= e.movementX * 0.002;
+            // Limit vertical rotation for player head/camera
+            camera.rotation.x -= e.movementY * 0.002;
+            camera.rotation.x = Math.max(-Math.PI/2, Math.min(Math.PI/2, camera.rotation.x));
         }
+    }
+
+    function animate() {
+        requestAnimationFrame(animate);
+        const delta = clock.getDelta();
+
+        // Momentum Physics
+        velocity.x -= velocity.x * 10.0 * delta;
+        velocity.z -= velocity.z * 10.0 * delta;
+
+        direction.z = Number(moveForward) - Number(moveBackward);
+        direction.x = Number(moveRight) - Number(moveLeft);
+        direction.normalize();
+
+        let speed = isCrouching ? 20.0 : 70.0;
+        if (moveForward || moveBackward) velocity.z -= direction.z * speed * delta;
+        if (moveLeft || moveRight) velocity.x -= direction.x * speed * delta;
+
+        playerBox.translateX(-velocity.x * delta);
+        playerBox.translateZ(-velocity.z * delta);
+
+        // --- CAMERA VIEW LOGIC ---
+        if(viewMode === 0) { // FPS
+            camera.position.copy(playerBox.position);
+            camera.position.y += 0.8; 
+            camera.rotation.y = playerBox.rotation.y;
+        } else if(viewMode === 1) { // THIRD PERSON (GTA STYLE)
+            const offset = new THREE.Vector3(1.5, 2, 4); 
+            offset.applyQuaternion(playerBox.quaternion);
+            camera.position.copy(playerBox.position).add(offset);
+            camera.lookAt(playerBox.position);
+        } else { // CINEMATIC FIXED
+            camera.position.set(10, 8, playerBox.position.z + 5);
+            camera.lookAt(playerBox.position);
+        }
+
+        // Rain movement
+        if(rainSystem) {
+            const positions = rainSystem.geometry.attributes.position.array;
+            for (let i = 1; i < positions.length; i += 3) {
+                positions[i] -= 0.8;
+                if (positions[i] < 0) positions[i] = 50;
+            }
+            rainSystem.geometry.attributes.position.needsUpdate = true;
+        }
+
+        renderer.render(scene, camera);
+    }
+
+    window.addEventListener('resize', () => {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
     });
-}
-
-function toggleSettings() {
-    const menu = document.getElementById('settings-menu');
-    const isHidden = menu.style.display === 'none';
-    menu.style.display = isHidden ? 'flex' : 'none';
-    if(isHidden) document.exitPointerLock();
-}
-
-function animate() {
-    requestAnimationFrame(animate);
-    const delta = clock.getDelta();
-
-    // Movement Logic
-    velocity.x -= velocity.x * 10.0 * delta;
-    velocity.z -= velocity.z * 10.0 * delta;
-
-    direction.z = Number(moveForward) - Number(moveBackward);
-    direction.x = Number(moveRight) - Number(moveLeft);
-    direction.normalize();
-
-    if (moveForward || moveBackward) velocity.z -= direction.z * 100.0 * delta;
-    if (moveLeft || moveRight) velocity.x -= direction.x * 100.0 * delta;
-
-    player.translateX(-velocity.x * delta);
-    player.translateZ(-velocity.z * delta);
-
-    // Camera Logic (Third Person)
-    if(isThirdPerson) {
-        const relativeCameraOffset = new THREE.Vector3(0, 3, 6);
-        const cameraOffset = relativeCameraOffset.applyMatrix4(player.matrixWorld);
-        camera.position.lerp(cameraOffset, 0.1);
-        camera.lookAt(player.position.x, player.position.y + 1, player.position.z);
-    } else {
-        camera.position.copy(player.position);
-        camera.position.y += 0.8;
-        camera.rotation.copy(player.rotation);
-    }
-
-    renderer.render(scene, camera);
-}
-
-document.getElementById('fov-range').addEventListener('input', (e) => {
-    camera.fov = e.target.value;
-    camera.updateProjectionMatrix();
-});
-
-function setWeather(type) {
-    if(type === 'storm') {
-        scene.fog.density = 0.08;
-        scene.background = new THREE.Color(0x050005);
-    } else {
-        scene.fog.density = 0.03;
-        scene.background = new THREE.Color(0x0a0a12);
-    }
-}
 </script>
 </body>
 </html>

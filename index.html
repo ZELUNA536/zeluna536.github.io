@@ -2,563 +2,633 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>PROJECT: SYNTHETIC ECHO</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PROJECT: SYNTHETIC ECHO | V1.0</title>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap');
-
-        body {
-            margin: 0;
-            overflow: hidden;
-            background-color: #000;
-            font-family: 'Share Tech Mono', monospace;
-            user-select: none;
+        :root {
+            --glitch-red: #ff3131;
+            --neon-blue: #00f3ff;
+            --overlay: rgba(0, 0, 0, 0.85);
         }
 
-        #ui-layer {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            pointer-events: none;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-            z-index: 10;
+        body, html { 
+            margin: 0; padding: 0; width: 100%; height: 100%; 
+            overflow: hidden; background: #000; color: #fff;
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
         }
 
-        /* Vignette & Grain Overlay for Horror Vibe */
-        #screen-fx {
-            position: absolute;
-            width: 100%;
-            height: 100%;
-            background: radial-gradient(circle, transparent 50%, #000 150%);
-            box-shadow: inset 0 0 100px #000;
-            z-index: 1;
-            pointer-events: none;
+        /* Cinematic HUD */
+        #gui-wrapper {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none; z-index: 10;
+            display: flex; flex-direction: column; justify-content: space-between;
         }
 
-        /* Intro Video Container */
-        #intro-screen {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: #000;
-            color: #fff;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            z-index: 100;
-            pointer-events: all;
-            text-align: center;
+        /* CRT Filter Overlay */
+        #crt-overlay {
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), 
+                        linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+            background-size: 100% 4px, 3px 100%; pointer-events: none; z-index: 100;
         }
 
-        #intro-text {
-            font-size: 24px;
-            max-width: 600px;
-            line-height: 1.5;
-            color: #00ffcc;
-            text-shadow: 0 0 10px #00ffcc;
+        .scanner-line {
+            position: absolute; width: 100%; height: 100px;
+            background: linear-gradient(to bottom, transparent, rgba(0, 243, 255, 0.05), transparent);
+            animation: scan 8s linear infinite;
         }
 
-        .btn {
-            margin-top: 30px;
-            padding: 15px 40px;
-            background: transparent;
-            border: 2px solid #00ffcc;
-            color: #00ffcc;
-            font-family: 'Share Tech Mono', monospace;
-            font-size: 20px;
-            cursor: pointer;
-            transition: 0.3s;
-            text-transform: uppercase;
+        @keyframes scan { from { top: -100px; } to { top: 100%; } }
+
+        /* Bottom Controls Gradient */
+        #controls-legend {
+            background: linear-gradient(transparent, rgba(0,0,0,0.9));
+            padding: 30px; display: flex; justify-content: center; gap: 25px;
+            font-size: 12px; letter-spacing: 2px; color: #888;
+            border-top: 1px solid rgba(0, 243, 255, 0.1);
         }
 
-        .btn:hover {
-            background: #00ffcc;
-            color: #000;
-            box-shadow: 0 0 20px #00ffcc;
+        .key-hint { color: var(--neon-blue); font-weight: bold; border: 1px solid #333; padding: 2px 8px; border-radius: 4px; }
+
+        /* Intro Sequence */
+        #main-menu {
+            position: fixed; z-index: 1000; width: 100%; height: 100%;
+            background: radial-gradient(circle, #1a1a1a 0%, #000 100%);
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            transition: opacity 2s ease;
         }
 
-        #settings-menu {
-            margin-bottom: 20px;
-        }
-
-        /* Game UI */
-        #hud-top {
-            padding: 20px;
-            display: flex;
-            justify-content: space-between;
-            color: rgba(255, 255, 255, 0.8);
-        }
-
-        #stamina-bar-container {
-            width: 200px;
-            height: 10px;
-            background: #333;
-            border: 1px solid #555;
-        }
-
-        #stamina-bar {
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(90deg, #ffcc00, #ff6600);
-            transition: width 0.1s;
-        }
-
-        #subtitle-container {
-            text-align: center;
-            margin-bottom: 20%;
-            color: #fff;
-            font-size: 18px;
-            text-shadow: 0 2px 4px #000;
-            height: 30px;
-        }
-
-        #controls-bar {
-            background: linear-gradient(0deg, rgba(0,0,0,0.9) 0%, transparent 100%);
-            padding: 15px;
-            color: #aaa;
-            font-size: 14px;
-            display: flex;
-            gap: 20px;
-            justify-content: center;
-            border-top: 1px solid #333;
-        }
-
-        .key {
-            border: 1px solid #666;
-            padding: 2px 6px;
-            border-radius: 4px;
-            color: #fff;
-            background: #222;
-        }
-
-        #crosshair {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            width: 4px;
-            height: 4px;
-            background: white;
-            border-radius: 50%;
-            transform: translate(-50%, -50%);
-            box-shadow: 0 0 5px white;
-            z-index: 5;
-        }
-
-        /* Glitch Effect Class */
-        .glitch {
-            animation: glitch 1s linear infinite;
+        .glitch-title {
+            font-size: 5rem; font-weight: 900; text-transform: uppercase;
+            position: relative; text-shadow: 0.05em 0 0 var(--glitch-red), -0.05em -0.025em 0 var(--neon-blue);
+            animation: glitch 1s infinite;
         }
 
         @keyframes glitch {
-            2%, 64% { transform: translate(2px,0) skew(0deg); }
-            4%, 60% { transform: translate(-2px,0) skew(0deg); }
-            62% { transform: translate(0,0) skew(5deg); }
+            0% { transform: translate(0) }
+            20% { transform: translate(-3px, 3px) }
+            40% { transform: translate(-3px, -3px) }
+            60% { transform: translate(3px, 3px) }
+            80% { transform: translate(3px, -3px) }
+            100% { transform: translate(0) }
+        }
+
+        #subtitles {
+            position: absolute; bottom: 150px; width: 100%; text-align: center;
+            font-size: 20px; color: #eee; text-shadow: 2px 2px 10px #000;
+            font-style: italic; opacity: 0; transition: opacity 0.5s;
+        }
+
+        #crosshair {
+            position: absolute; top: 50%; left: 50%; width: 10px; height: 10px;
+            border: 1px solid rgba(255,255,255,0.3); border-radius: 50%;
+            transform: translate(-50%, -50%);
         }
     </style>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/PointerLockControls.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/simplex-noise/2.4.0/simplex-noise.min.js"></script>
 </head>
 <body>
 
-    <div id="screen-fx"></div>
+<div id="crt-overlay"><div class="scanner-line"></div></div>
+
+<div id="main-menu">
+    <div class="glitch-title">SYNTHETIC ECHO</div>
+    <p style="color: #666; margin-top: -10px;">A PLAYTIME CO. SUBSIDARY STORY</p>
+    <div style="margin: 40px; text-align: center;">
+        <label>GENDER: 
+            <select id="gender" style="background: #000; color: var(--neon-blue); border: 1px solid #333;">
+                <option value="F">SUBJECT-A (FEMALE)</option>
+                <option value="M">SUBJECT-B (MALE)</option>
+            </select>
+        </label>
+        <label style="margin-left: 20px;">ATMOSPHERE: 
+            <select id="weather" style="background: #000; color: var(--neon-blue); border: 1px solid #333;">
+                <option value="rain">INDUSTRIAL STORM</option>
+                <option value="fog">SILENT FOG</option>
+            </select>
+        </label>
+    </div>
+    <button id="start-btn" style="background: none; border: 2px solid var(--neon-blue); color: #fff; padding: 15px 50px; cursor: pointer; font-size: 1.2rem;">ENTER FACILITY</button>
+</div>
+
+<div id="gui-wrapper" style="display:none;">
     <div id="crosshair"></div>
-
-    <div id="intro-screen">
-        <h1 style="color: #ff3333; font-size: 60px; text-shadow: 0 0 20px #ff0000;">PROJECT: SYNTHETIC ECHO</h1>
-        <p>WARNING: MATURE CONTENT (16+). PSYCHOLOGICAL HORROR.</p>
-        
-        <div id="settings-menu">
-            <label style="margin-right: 15px;">CHARACTER: 
-                <select id="gender-select" style="background:#000; color:#00ffcc; border:1px solid #00ffcc; padding:5px;">
-                    <option value="female">FEMALE (Agile)</option>
-                    <option value="male">MALE (Robust)</option>
-                </select>
-            </label>
-            <label>WEATHER: 
-                <select id="weather-select" style="background:#000; color:#00ffcc; border:1px solid #00ffcc; padding:5px;">
-                    <option value="storm">STORM</option>
-                    <option value="clear">CLEAR (Foggy)</option>
-                </select>
-            </label>
-        </div>
-
-        <div id="intro-text">
-            "They said the factory was abandoned. They lied.<br>
-            The Playtime Co. initiative didn't end... it evolved."
-        </div>
-        <button class="btn" onclick="startGame()">INITIALIZE LINK</button>
+    <div id="subtitles"></div>
+    <div id="controls-legend">
+        <span><span class="key-hint">W A S D</span> MOVEMENT</span>
+        <span><span class="key-hint">SHIFT</span> SPRINT</span>
+        <span><span class="key-hint">F</span> FLASHLIGHT</span>
+        <span><span class="key-hint">C</span> STEALTH</span>
+        <span><span class="key-hint">SPACE</span> JUMP</span>
     </div>
+</div>
 
-    <div id="ui-layer" style="display:none;">
-        <div id="hud-top">
-            <div>OBJECTIVE: Find the Red Keycard</div>
-            <div>
-                STAMINA
-                <div id="stamina-bar-container"><div id="stamina-bar"></div></div>
-            </div>
-        </div>
-        
-        <div>
-            <div id="subtitle-container"></div>
-            <div id="controls-bar">
-                <span><span class="key">W</span><span class="key">A</span><span class="key">S</span><span class="key">D</span> MOVE</span>
-                <span><span class="key">SHIFT</span> SPRINT</span>
-                <span><span class="key">C</span> CROUCH</span>
-                <span><span class="key">F</span> FLASHLIGHT</span>
-                <span><span class="key">SPACE</span> JUMP</span>
-            </div>
-        </div>
-    </div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 
 <script>
-    // --- CONFIGURATION ---
-    let camera, scene, renderer, controls;
-    let moveForward = false, moveBackward = false, moveLeft = false, moveRight = false;
-    let canJump = false;
-    let isSprinting = false;
-    let isCrouching = false;
-    
-    // Physics / Player vars
-    let prevTime = performance.now();
-    const velocity = new THREE.Vector3();
-    const direction = new THREE.Vector3();
-    let playerHeight = 1.8; // changes based on gender
-    let stamina = 100;
+/** * ENGINE CORE: PROJECT SYNTHETIC ECHO 
+ * DESIGNED FOR 60FPS PHOTOREALISM (BROWSER LIMIT)
+ */
 
-    // Game State
-    let flashLightOn = true;
-    let lightningActive = false;
-    let rainSystem;
-    
-    // Audio Context (Synthesized sound)
-    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    
-    // DOM Elements
-    const staminaEl = document.getElementById('stamina-bar');
-    const subtitleEl = document.getElementById('subtitle-container');
+let scene, camera, renderer, controls, flashLight;
+let moveForward = false, moveBackward = false, moveLeft = false, moveRight = false;
+let velocity = new THREE.Vector3();
+let direction = new THREE.Vector3();
+let prevTime = performance.now();
+let rainParticles;
 
-    function startGame() {
-        const gender = document.getElementById('gender-select').value;
-        const weather = document.getElementById('weather-select').value;
-        lightningActive = (weather === 'storm');
-
-        // Apply settings
-        playerHeight = (gender === 'female') ? 1.6 : 1.9;
-        
-        // Hide Intro, Show UI
-        document.getElementById('intro-screen').style.display = 'none';
-        document.getElementById('ui-layer').style.display = 'flex';
-
-        init3D(weather);
+// Initialization
+document.getElementById('start-btn').addEventListener('click', () => {
+    document.getElementById('main-menu').style.opacity = '0';
+    setTimeout(() => {
+        document.getElementById('main-menu').style.display = 'none';
+        document.getElementById('gui-wrapper').style.display = 'flex';
+        init();
         animate();
+        playIntro();
+    }, 2000);
+});
 
-        // Intro Audio Cue
-        playSynthSound(100, 'sawtooth', 1.5); // ominous start
-        showSubtitle("System: Bio-signature accepted. Welcome to Sector 4.", 3000);
-    }
+function init() {
+    scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x020202);
+    scene.fog = new THREE.FogExp2(0x020202, 0.04);
 
-    function init3D(weatherType) {
-        scene = new THREE.Scene();
-        scene.background = new THREE.Color(0x050505);
-        scene.fog = new THREE.FogExp2(0x050505, 0.025);
-
-        camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-        
-        renderer = new THREE.WebGLRenderer({ antialias: true });
-        renderer.setSize(window.innerWidth, window.innerHeight);
-        renderer.shadowMap.enabled = true; // Realistic shadows
-        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-        document.body.appendChild(renderer.domElement);
-
-        // CONTROLS
-        controls = new THREE.PointerLockControls(camera, document.body);
-        
-        document.addEventListener('click', () => {
-            controls.lock();
-        });
-
-        scene.add(controls.getObject());
-
-        // LIGHTING
-        // Ambient (very dark)
-        const ambientLight = new THREE.AmbientLight(0x404040, 0.2); 
-        scene.add(ambientLight);
-
-        // Flashlight (Spotlight attached to camera)
-        const spotLight = new THREE.SpotLight(0xffffff, 1);
-        spotLight.position.set(0, 0, 0); // Relative to camera
-        spotLight.angle = 0.6;
-        spotLight.penumbra = 0.5;
-        spotLight.decay = 2;
-        spotLight.distance = 40;
-        spotLight.castShadow = true;
-        camera.add(spotLight);
-        scene.add(camera); // Add camera to scene so light moves with it
-        
-        window.flashlightRef = spotLight; // Global ref to toggle
-
-        // --- WORLD GENERATION (Procedural Textures) ---
-        
-        // Floor (Simulating Grass/Concrete mix)
-        const floorGeometry = new THREE.PlaneGeometry(200, 200, 100, 100);
-        floorGeometry.rotateX(-Math.PI / 2);
-        
-        // Create vertex displacement for realistic terrain
-        const positionAttribute = floorGeometry.attributes.position;
-        const vertex = new THREE.Vector3();
-        const noise = new SimplexNoise();
-
-        for ( let i = 0; i < positionAttribute.count; i ++ ) {
-            vertex.fromBufferAttribute( positionAttribute, i );
-            // Slight unevenness
-            vertex.z += noise.noise2D(vertex.x * 0.1, vertex.y * 0.1) * 0.5; 
-            positionAttribute.setXYZ( i, vertex.x, vertex.y, vertex.z );
-        }
-        
-        const floorMaterial = new THREE.MeshStandardMaterial({ 
-            color: 0x1a1a1a, 
-            roughness: 0.8,
-            metalness: 0.2
-        });
-        const floor = new THREE.Mesh(floorGeometry, floorMaterial);
-        floor.receiveShadow = true;
-        scene.add(floor);
-
-        // Walls / Factory Structure
-        const wallGeo = new THREE.BoxGeometry(10, 20, 1);
-        const wallMat = new THREE.MeshStandardMaterial({ color: 0x333333, roughness: 0.1 }); // shiny walls
-        
-        for(let i=0; i<10; i++) {
-            const wall = new THREE.Mesh(wallGeo, wallMat);
-            wall.position.x = (Math.random() - 0.5) * 100;
-            wall.position.z = (Math.random() - 0.5) * 100;
-            wall.position.y = 10;
-            wall.castShadow = true;
-            wall.receiveShadow = true;
-            scene.add(wall);
-        }
-
-        // "Water" Pool
-        const waterGeo = new THREE.CircleGeometry(20, 32);
-        const waterMat = new THREE.MeshStandardMaterial({
-            color: 0x001133,
-            transparent: true,
-            opacity: 0.8,
-            roughness: 0.0,
-            metalness: 1.0
-        });
-        const water = new THREE.Mesh(waterGeo, waterMat);
-        water.rotation.x = -Math.PI / 2;
-        water.position.y = 0.1;
-        water.position.z = -30;
-        scene.add(water);
-
-        // The "Monster" (Abstract representation)
-        // Since we can't load Poppy Playtime assets, we create a creepy glowing entity
-        const monsterGeo = new THREE.CylinderGeometry(0.5, 0.5, 3, 32);
-        const monsterMat = new THREE.MeshStandardMaterial({ 
-            color: 0xff0000, 
-            emissive: 0x550000,
-            emissiveIntensity: 0.5
-        });
-        window.monster = new THREE.Mesh(monsterGeo, monsterMat);
-        monster.position.set(0, 1.5, -40);
-        monster.castShadow = true;
-        scene.add(monster);
-
-        // --- WEATHER (RAIN) ---
-        if(weatherType === 'storm') {
-            const rainGeo = new THREE.BufferGeometry();
-            const rainCount = 15000;
-            const rainPos = new Float32Array(rainCount * 3);
-            for(let i=0; i<rainCount*3; i++) {
-                rainPos[i] = (Math.random() - 0.5) * 200;
-            }
-            rainGeo.setAttribute('position', new THREE.BufferAttribute(rainPos, 3));
-            const rainMat = new THREE.PointsMaterial({
-                color: 0xaaaaaa,
-                size: 0.1,
-                transparent: true
-            });
-            rainSystem = new THREE.Points(rainGeo, rainMat);
-            scene.add(rainSystem);
-            
-            // Lightning Light
-            window.lightningLight = new THREE.PointLight(0xaaddff, 0, 500);
-            window.lightningLight.position.set(0, 50, 0);
-            scene.add(window.lightningLight);
-        }
-
-        // INPUT LISTENERS
-        const onKeyDown = function (event) {
-            switch (event.code) {
-                case 'ArrowUp': case 'KeyW': moveForward = true; break;
-                case 'ArrowLeft': case 'KeyA': moveLeft = true; break;
-                case 'ArrowDown': case 'KeyS': moveBackward = true; break;
-                case 'ArrowRight': case 'KeyD': moveRight = true; break;
-                case 'Space': if (canJump === true) velocity.y += 35; canJump = false; break;
-                case 'ShiftLeft': isSprinting = true; break;
-                case 'KeyC': 
-                    isCrouching = true; 
-                    controls.getObject().position.y -= 0.5; 
-                    break;
-                case 'KeyF':
-                    flashLightOn = !flashLightOn;
-                    window.flashlightRef.intensity = flashLightOn ? 1 : 0;
-                    playClickSound();
-                    break;
-            }
-        };
-
-        const onKeyUp = function (event) {
-            switch (event.code) {
-                case 'ArrowUp': case 'KeyW': moveForward = false; break;
-                case 'ArrowLeft': case 'KeyA': moveLeft = false; break;
-                case 'ArrowDown': case 'KeyS': moveBackward = false; break;
-                case 'ArrowRight': case 'KeyD': moveRight = false; break;
-                case 'ShiftLeft': isSprinting = false; break;
-                case 'KeyC': 
-                    isCrouching = false; 
-                    controls.getObject().position.y += 0.5;
-                    break;
-            }
-        };
-
-        document.addEventListener('keydown', onKeyDown);
-        document.addEventListener('keyup', onKeyUp);
-        
-        window.addEventListener('resize', onWindowResize, false);
-    }
-
-    function onWindowResize() {
-        camera.aspect = window.innerWidth / window.innerHeight;
-        camera.updateProjectionMatrix();
-        renderer.setSize(window.innerWidth, window.innerHeight);
-    }
-
-    // --- GAME LOGIC ---
-    function animate() {
-        requestAnimationFrame(animate);
-
-        const time = performance.now();
-        
-        if (controls.isLocked === true) {
-            
-            const delta = (time - prevTime) / 1000;
-
-            // Stamina Logic
-            if(isSprinting && (moveForward || moveBackward || moveLeft || moveRight)) {
-                stamina = Math.max(0, stamina - 0.5);
-            } else {
-                stamina = Math.min(100, stamina + 0.2);
-            }
-            staminaEl.style.width = stamina + '%';
-            
-            // Movement speed based on Gender & Sprint
-            let speed = 40.0; // Base speed
-            if (isSprinting && stamina > 0) speed = 80.0;
-            if (isCrouching) speed = 20.0;
-
-            velocity.x -= velocity.x * 10.0 * delta;
-            velocity.z -= velocity.z * 10.0 * delta;
-            velocity.y -= 9.8 * 10.0 * delta; // Gravity
-
-            direction.z = Number(moveForward) - Number(moveBackward);
-            direction.x = Number(moveRight) - Number(moveLeft);
-            direction.normalize();
-
-            if (moveForward || moveBackward) velocity.z -= direction.z * speed * delta;
-            if (moveLeft || moveRight) velocity.x -= direction.x * speed * delta;
-
-            controls.moveRight(-velocity.x * delta);
-            controls.moveForward(-velocity.z * delta);
-            controls.getObject().position.y += (velocity.y * delta); // Jump
-
-            // Floor Collision
-            if (controls.getObject().position.y < playerHeight) {
-                velocity.y = 0;
-                controls.getObject().position.y = playerHeight;
-                canJump = true;
-            }
-
-            // --- HORROR ELEMENTS ---
-            
-            // Rain Animation
-            if(rainSystem) {
-                rainSystem.rotation.y += 0.002;
-                const positions = rainSystem.geometry.attributes.position.array;
-                for(let i=1; i<positions.length; i+=3) {
-                    positions[i] -= 2; // Fall down
-                    if(positions[i] < 0) positions[i] = 50;
-                }
-                rainSystem.geometry.attributes.position.needsUpdate = true;
-
-                // Random Lightning
-                if(Math.random() > 0.995) {
-                    window.lightningLight.intensity = 10;
-                    playSynthSound(200, 'square', 0.2); // Thunder crack
-                    setTimeout(() => window.lightningLight.intensity = 0, 100);
-                }
-            }
-
-            // Monster Logic (Stalking)
-            const playerPos = controls.getObject().position;
-            const dist = playerPos.distanceTo(window.monster.position);
-            
-            if(dist < 50 && dist > 5) {
-                // Move monster towards player slowly
-                window.monster.lookAt(playerPos);
-                window.monster.translateZ(0.05);
-                
-                // Dynamic Audio Breath
-                if(Math.random() > 0.99) showSubtitle("*Heavy breathing nearby*", 1000);
-            } else if (dist < 5) {
-                // Jumpscare reset
-                showSubtitle("CAUGHT YOU.", 2000);
-                controls.unlock();
-                document.getElementById('intro-screen').style.display = 'flex';
-                // Reset position
-                controls.getObject().position.set(0, 10, 0);
-                window.monster.position.set(0, 1.5, -40);
-            }
-
-        }
-
-        prevTime = time;
-        renderer.render(scene, camera);
-    }
-
-    // --- UTILS ---
+    camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
     
-    function showSubtitle(text, duration) {
-        subtitleEl.innerText = text;
-        setTimeout(() => subtitleEl.innerText = "", duration);
+    renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
+    renderer.setPixelRatio(window.devicePixelRatio);
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    renderer.outputEncoding = THREE.sRGBEncoding;
+    document.body.appendChild(renderer.domElement);
+
+    // Realistic Lighting
+    const ambient = new THREE.AmbientLight(0x404040, 0.05);
+    scene.add(ambient);
+
+    flashLight = new THREE.SpotLight(0xffffff, 2);
+    flashLight.position.set(0, 0, 0);
+    flashLight.angle = Math.PI / 6;
+    flashLight.penumbra = 0.3;
+    flashLight.decay = 2;
+    flashLight.distance = 50;
+    flashLight.castShadow = true;
+    camera.add(flashLight);
+    camera.add(flashLight.target);
+    flashLight.target.position.set(0, 0, -1);
+    scene.add(camera);
+
+    // Floor Texture (PBR Emulation)
+    const floorGeo = new THREE.PlaneGeometry(1000, 1000);
+    const floorMat = new THREE.MeshStandardMaterial({ 
+        color: 0x111111, 
+        roughness: 0.1, 
+        metalness: 0.8 
+    });
+    const floor = new THREE.Mesh(floorGeo, floorMat);
+    floor.rotation.x = -Math.PI / 2;
+    floor.receiveShadow = true;
+    scene.add(floor);
+
+    // Environment: Industrial Hallway
+    createStructure();
+    
+    // Weather System
+    if(document.getElementById('weather').value === 'rain') createRain();
+
+    // Controls Initialization
+    setupControls();
+}
+
+function createStructure() {
+    // Creating realistic concrete pillars and industrial walls
+    const wallMat = new THREE.MeshStandardMaterial({ color: 0x222222, roughness: 0.9 });
+    for(let i = 0; i < 20; i++) {
+        const pillar = new THREE.Mesh(new THREE.BoxGeometry(2, 20, 2), wallMat);
+        pillar.position.set(i % 2 ? 10 : -10, 10, -i * 15);
+        pillar.castShadow = true;
+        scene.add(pillar);
+        
+        // Flickering Wall Light
+        if(i % 4 === 0) {
+            const lamp = new THREE.PointLight(0xffaa00, 0.5, 20);
+            lamp.position.set(i % 2 ? 8 : -8, 12, -i * 15);
+            scene.add(lamp);
+        }
+    }
+}
+
+function createRain() {
+    const geo = new THREE.BufferGeometry();
+    const count = 5000;
+    const pos = new Float32Array(count * 3);
+    for(let i=0; i<count*3; i++) pos[i] = (Math.random() - 0.5) * 100;
+    geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+    rainParticles = new THREE.Points(geo, new THREE.PointsMaterial({ color: 0xaaaaaa, size: 0.05 }));
+    scene.add(rainParticles);
+}
+
+function playIntro() {
+    const subs = [
+        "Experiment Log: Day 1,402.",
+        "The prototype... it's not breathing, yet it moves.",
+        "If you see the blue light, do not run.",
+        "It likes the chase."
+    ];
+    let i = 0;
+    const interval = setInterval(() => {
+        const el = document.getElementById('subtitles');
+        el.innerText = subs[i];
+        el.style.opacity = 1;
+        setTimeout(() => el.style.opacity = 0, 2500);
+        i++;
+        if(i >= subs.length) clearInterval(interval);
+    }, 4000);
+}
+
+function setupControls() {
+    document.addEventListener('keydown', (e) => {
+        if(e.code === 'KeyW') moveForward = true;
+        if(e.code === 'KeyS') moveBackward = true;
+        if(e.code === 'KeyA') moveLeft = true;
+        if(e.code === 'KeyD') moveRight = true;
+        if(e.code === 'KeyF') flashLight.intensity = flashLight.intensity ? 0 : 2;
+    });
+    document.addEventListener('keyup', (e) => {
+        if(e.code === 'KeyW') moveForward = false;
+        if(e.code === 'KeyS') moveBackward = false;
+        if(e.code === 'KeyA') moveLeft = false;
+        if(e.code === 'KeyD') moveRight = false;
+    });
+    document.body.addEventListener('click', () => {
+        document.body.requestPointerLock();
+    });
+    document.addEventListener('mousemove', (e) => {
+        if(document.pointerLockElement === document.body) {
+            camera.rotation.y -= e.movementX * 0.002;
+            camera.rotation.x -= e.movementY * 0.002;
+        }
+    });
+}
+
+function animate() {
+    requestAnimationFrame(animate);
+    const time = performance.now();
+    const delta = (time - prevTime) / 1000;
+
+    // Head Bobbing Logic (GTA V style realism)
+    if(moveForward || moveBackward || moveLeft || moveRight) {
+        const timer = Date.now() * 0.005;
+        camera.position.y = 1.7 + Math.sin(timer) * 0.05;
     }
 
-    // Synthesized Sound Generator (No external files needed)
-    function playSynthSound(freq, type, duration) {
-        if(audioCtx.state === 'suspended') audioCtx.resume();
-        const osc = audioCtx.createOscillator();
-        const gain = audioCtx.createGain();
-        osc.type = type; // 'sine', 'square', 'sawtooth', 'triangle'
-        osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
-        osc.connect(gain);
-        gain.connect(audioCtx.destination);
-        osc.start();
-        gain.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime + duration);
-        osc.stop(audioCtx.currentTime + duration);
+    // Movement Physics
+    velocity.x -= velocity.x * 10.0 * delta;
+    velocity.z -= velocity.z * 10.0 * delta;
+
+    direction.z = Number(moveForward) - Number(moveBackward);
+    direction.x = Number(moveRight) - Number(moveLeft);
+    direction.normalize();
+
+    if (moveForward || moveBackward) velocity.z -= direction.z * 100.0 * delta;
+    if (moveLeft || moveRight) velocity.x -= direction.x * 100.0 * delta;
+
+    camera.translateX(-velocity.x * delta);
+    camera.translateZ(-velocity.z * delta);
+
+    // Rain Animation
+    if(rainParticles) {
+        rainParticles.position.y -= 0.5;
+        if(rainParticles.position.y < -20) rainParticles.position.y = 20;
     }
 
-    function playClickSound() {
-        playSynthSound(800, 'sine', 0.1);
+    renderer.render(scene, camera);
+    prevTime = time;
+}
+
+window.addEventListener('resize', () => {
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+});
+
+</script>
+</body>
+</html><!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PROJECT: SYNTHETIC ECHO | V1.0</title>
+    <style>
+        :root {
+            --glitch-red: #ff3131;
+            --neon-blue: #00f3ff;
+            --overlay: rgba(0, 0, 0, 0.85);
+        }
+
+        body, html { 
+            margin: 0; padding: 0; width: 100%; height: 100%; 
+            overflow: hidden; background: #000; color: #fff;
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        /* Cinematic HUD */
+        #gui-wrapper {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none; z-index: 10;
+            display: flex; flex-direction: column; justify-content: space-between;
+        }
+
+        /* CRT Filter Overlay */
+        #crt-overlay {
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), 
+                        linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+            background-size: 100% 4px, 3px 100%; pointer-events: none; z-index: 100;
+        }
+
+        .scanner-line {
+            position: absolute; width: 100%; height: 100px;
+            background: linear-gradient(to bottom, transparent, rgba(0, 243, 255, 0.05), transparent);
+            animation: scan 8s linear infinite;
+        }
+
+        @keyframes scan { from { top: -100px; } to { top: 100%; } }
+
+        /* Bottom Controls Gradient */
+        #controls-legend {
+            background: linear-gradient(transparent, rgba(0,0,0,0.9));
+            padding: 30px; display: flex; justify-content: center; gap: 25px;
+            font-size: 12px; letter-spacing: 2px; color: #888;
+            border-top: 1px solid rgba(0, 243, 255, 0.1);
+        }
+
+        .key-hint { color: var(--neon-blue); font-weight: bold; border: 1px solid #333; padding: 2px 8px; border-radius: 4px; }
+
+        /* Intro Sequence */
+        #main-menu {
+            position: fixed; z-index: 1000; width: 100%; height: 100%;
+            background: radial-gradient(circle, #1a1a1a 0%, #000 100%);
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            transition: opacity 2s ease;
+        }
+
+        .glitch-title {
+            font-size: 5rem; font-weight: 900; text-transform: uppercase;
+            position: relative; text-shadow: 0.05em 0 0 var(--glitch-red), -0.05em -0.025em 0 var(--neon-blue);
+            animation: glitch 1s infinite;
+        }
+
+        @keyframes glitch {
+            0% { transform: translate(0) }
+            20% { transform: translate(-3px, 3px) }
+            40% { transform: translate(-3px, -3px) }
+            60% { transform: translate(3px, 3px) }
+            80% { transform: translate(3px, -3px) }
+            100% { transform: translate(0) }
+        }
+
+        #subtitles {
+            position: absolute; bottom: 150px; width: 100%; text-align: center;
+            font-size: 20px; color: #eee; text-shadow: 2px 2px 10px #000;
+            font-style: italic; opacity: 0; transition: opacity 0.5s;
+        }
+
+        #crosshair {
+            position: absolute; top: 50%; left: 50%; width: 10px; height: 10px;
+            border: 1px solid rgba(255,255,255,0.3); border-radius: 50%;
+            transform: translate(-50%, -50%);
+        }
+    </style>
+</head>
+<body>
+
+<div id="crt-overlay"><div class="scanner-line"></div></div>
+
+<div id="main-menu">
+    <div class="glitch-title">SYNTHETIC ECHO</div>
+    <p style="color: #666; margin-top: -10px;">A PLAYTIME CO. SUBSIDARY STORY</p>
+    <div style="margin: 40px; text-align: center;">
+        <label>GENDER: 
+            <select id="gender" style="background: #000; color: var(--neon-blue); border: 1px solid #333;">
+                <option value="F">SUBJECT-A (FEMALE)</option>
+                <option value="M">SUBJECT-B (MALE)</option>
+            </select>
+        </label>
+        <label style="margin-left: 20px;">ATMOSPHERE: 
+            <select id="weather" style="background: #000; color: var(--neon-blue); border: 1px solid #333;">
+                <option value="rain">INDUSTRIAL STORM</option>
+                <option value="fog">SILENT FOG</option>
+            </select>
+        </label>
+    </div>
+    <button id="start-btn" style="background: none; border: 2px solid var(--neon-blue); color: #fff; padding: 15px 50px; cursor: pointer; font-size: 1.2rem;">ENTER FACILITY</button>
+</div>
+
+<div id="gui-wrapper" style="display:none;">
+    <div id="crosshair"></div>
+    <div id="subtitles"></div>
+    <div id="controls-legend">
+        <span><span class="key-hint">W A S D</span> MOVEMENT</span>
+        <span><span class="key-hint">SHIFT</span> SPRINT</span>
+        <span><span class="key-hint">F</span> FLASHLIGHT</span>
+        <span><span class="key-hint">C</span> STEALTH</span>
+        <span><span class="key-hint">SPACE</span> JUMP</span>
+    </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
+<script>
+/** * ENGINE CORE: PROJECT SYNTHETIC ECHO 
+ * DESIGNED FOR 60FPS PHOTOREALISM (BROWSER LIMIT)
+ */
+
+let scene, camera, renderer, controls, flashLight;
+let moveForward = false, moveBackward = false, moveLeft = false, moveRight = false;
+let velocity = new THREE.Vector3();
+let direction = new THREE.Vector3();
+let prevTime = performance.now();
+let rainParticles;
+
+// Initialization
+document.getElementById('start-btn').addEventListener('click', () => {
+    document.getElementById('main-menu').style.opacity = '0';
+    setTimeout(() => {
+        document.getElementById('main-menu').style.display = 'none';
+        document.getElementById('gui-wrapper').style.display = 'flex';
+        init();
+        animate();
+        playIntro();
+    }, 2000);
+});
+
+function init() {
+    scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x020202);
+    scene.fog = new THREE.FogExp2(0x020202, 0.04);
+
+    camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+    
+    renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
+    renderer.setPixelRatio(window.devicePixelRatio);
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    renderer.outputEncoding = THREE.sRGBEncoding;
+    document.body.appendChild(renderer.domElement);
+
+    // Realistic Lighting
+    const ambient = new THREE.AmbientLight(0x404040, 0.05);
+    scene.add(ambient);
+
+    flashLight = new THREE.SpotLight(0xffffff, 2);
+    flashLight.position.set(0, 0, 0);
+    flashLight.angle = Math.PI / 6;
+    flashLight.penumbra = 0.3;
+    flashLight.decay = 2;
+    flashLight.distance = 50;
+    flashLight.castShadow = true;
+    camera.add(flashLight);
+    camera.add(flashLight.target);
+    flashLight.target.position.set(0, 0, -1);
+    scene.add(camera);
+
+    // Floor Texture (PBR Emulation)
+    const floorGeo = new THREE.PlaneGeometry(1000, 1000);
+    const floorMat = new THREE.MeshStandardMaterial({ 
+        color: 0x111111, 
+        roughness: 0.1, 
+        metalness: 0.8 
+    });
+    const floor = new THREE.Mesh(floorGeo, floorMat);
+    floor.rotation.x = -Math.PI / 2;
+    floor.receiveShadow = true;
+    scene.add(floor);
+
+    // Environment: Industrial Hallway
+    createStructure();
+    
+    // Weather System
+    if(document.getElementById('weather').value === 'rain') createRain();
+
+    // Controls Initialization
+    setupControls();
+}
+
+function createStructure() {
+    // Creating realistic concrete pillars and industrial walls
+    const wallMat = new THREE.MeshStandardMaterial({ color: 0x222222, roughness: 0.9 });
+    for(let i = 0; i < 20; i++) {
+        const pillar = new THREE.Mesh(new THREE.BoxGeometry(2, 20, 2), wallMat);
+        pillar.position.set(i % 2 ? 10 : -10, 10, -i * 15);
+        pillar.castShadow = true;
+        scene.add(pillar);
+        
+        // Flickering Wall Light
+        if(i % 4 === 0) {
+            const lamp = new THREE.PointLight(0xffaa00, 0.5, 20);
+            lamp.position.set(i % 2 ? 8 : -8, 12, -i * 15);
+            scene.add(lamp);
+        }
     }
+}
+
+function createRain() {
+    const geo = new THREE.BufferGeometry();
+    const count = 5000;
+    const pos = new Float32Array(count * 3);
+    for(let i=0; i<count*3; i++) pos[i] = (Math.random() - 0.5) * 100;
+    geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+    rainParticles = new THREE.Points(geo, new THREE.PointsMaterial({ color: 0xaaaaaa, size: 0.05 }));
+    scene.add(rainParticles);
+}
+
+function playIntro() {
+    const subs = [
+        "Experiment Log: Day 1,402.",
+        "The prototype... it's not breathing, yet it moves.",
+        "If you see the blue light, do not run.",
+        "It likes the chase."
+    ];
+    let i = 0;
+    const interval = setInterval(() => {
+        const el = document.getElementById('subtitles');
+        el.innerText = subs[i];
+        el.style.opacity = 1;
+        setTimeout(() => el.style.opacity = 0, 2500);
+        i++;
+        if(i >= subs.length) clearInterval(interval);
+    }, 4000);
+}
+
+function setupControls() {
+    document.addEventListener('keydown', (e) => {
+        if(e.code === 'KeyW') moveForward = true;
+        if(e.code === 'KeyS') moveBackward = true;
+        if(e.code === 'KeyA') moveLeft = true;
+        if(e.code === 'KeyD') moveRight = true;
+        if(e.code === 'KeyF') flashLight.intensity = flashLight.intensity ? 0 : 2;
+    });
+    document.addEventListener('keyup', (e) => {
+        if(e.code === 'KeyW') moveForward = false;
+        if(e.code === 'KeyS') moveBackward = false;
+        if(e.code === 'KeyA') moveLeft = false;
+        if(e.code === 'KeyD') moveRight = false;
+    });
+    document.body.addEventListener('click', () => {
+        document.body.requestPointerLock();
+    });
+    document.addEventListener('mousemove', (e) => {
+        if(document.pointerLockElement === document.body) {
+            camera.rotation.y -= e.movementX * 0.002;
+            camera.rotation.x -= e.movementY * 0.002;
+        }
+    });
+}
+
+function animate() {
+    requestAnimationFrame(animate);
+    const time = performance.now();
+    const delta = (time - prevTime) / 1000;
+
+    // Head Bobbing Logic (GTA V style realism)
+    if(moveForward || moveBackward || moveLeft || moveRight) {
+        const timer = Date.now() * 0.005;
+        camera.position.y = 1.7 + Math.sin(timer) * 0.05;
+    }
+
+    // Movement Physics
+    velocity.x -= velocity.x * 10.0 * delta;
+    velocity.z -= velocity.z * 10.0 * delta;
+
+    direction.z = Number(moveForward) - Number(moveBackward);
+    direction.x = Number(moveRight) - Number(moveLeft);
+    direction.normalize();
+
+    if (moveForward || moveBackward) velocity.z -= direction.z * 100.0 * delta;
+    if (moveLeft || moveRight) velocity.x -= direction.x * 100.0 * delta;
+
+    camera.translateX(-velocity.x * delta);
+    camera.translateZ(-velocity.z * delta);
+
+    // Rain Animation
+    if(rainParticles) {
+        rainParticles.position.y -= 0.5;
+        if(rainParticles.position.y < -20) rainParticles.position.y = 20;
+    }
+
+    renderer.render(scene, camera);
+    prevTime = time;
+}
+
+window.addEventListener('resize', () => {
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+});
 
 </script>
 </body>

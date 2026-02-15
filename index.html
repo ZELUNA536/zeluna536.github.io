@@ -52,9 +52,16 @@
 
         /* Intro Sequence */
         #main-menu {
-            position: fixed; z-index: 1000; width: 100%; height: 100%;
+            position: fixed; 
+            z-index: 2000; /* Increased to be above everything */
+            width: 100%; 
+            height: 100%;
             background: radial-gradient(circle, #1a1a1a 0%, #000 100%);
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            justify-content: center;
+            pointer-events: all; /* Ensures clicks work */
             transition: opacity 2s ease;
         }
 
@@ -84,322 +91,10 @@
             border: 1px solid rgba(255,255,255,0.3); border-radius: 50%;
             transform: translate(-50%, -50%);
         }
-    </style>
-</head>
-<body>
 
-<div id="crt-overlay"><div class="scanner-line"></div></div>
-
-<div id="main-menu">
-    <div class="glitch-title">SYNTHETIC ECHO</div>
-    <p style="color: #666; margin-top: -10px;">A PLAYTIME CO. SUBSIDARY STORY</p>
-    <div style="margin: 40px; text-align: center;">
-        <label>GENDER: 
-            <select id="gender" style="background: #000; color: var(--neon-blue); border: 1px solid #333;">
-                <option value="F">SUBJECT-A (FEMALE)</option>
-                <option value="M">SUBJECT-B (MALE)</option>
-            </select>
-        </label>
-        <label style="margin-left: 20px;">ATMOSPHERE: 
-            <select id="weather" style="background: #000; color: var(--neon-blue); border: 1px solid #333;">
-                <option value="rain">INDUSTRIAL STORM</option>
-                <option value="fog">SILENT FOG</option>
-            </select>
-        </label>
-    </div>
-    <button id="start-btn" style="background: none; border: 2px solid var(--neon-blue); color: #fff; padding: 15px 50px; cursor: pointer; font-size: 1.2rem;">ENTER FACILITY</button>
-</div>
-
-<div id="gui-wrapper" style="display:none;">
-    <div id="crosshair"></div>
-    <div id="subtitles"></div>
-    <div id="controls-legend">
-        <span><span class="key-hint">W A S D</span> MOVEMENT</span>
-        <span><span class="key-hint">SHIFT</span> SPRINT</span>
-        <span><span class="key-hint">F</span> FLASHLIGHT</span>
-        <span><span class="key-hint">C</span> STEALTH</span>
-        <span><span class="key-hint">SPACE</span> JUMP</span>
-    </div>
-</div>
-
-<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-
-<script>
-/** * ENGINE CORE: PROJECT SYNTHETIC ECHO 
- * DESIGNED FOR 60FPS PHOTOREALISM (BROWSER LIMIT)
- */
-
-let scene, camera, renderer, controls, flashLight;
-let moveForward = false, moveBackward = false, moveLeft = false, moveRight = false;
-let velocity = new THREE.Vector3();
-let direction = new THREE.Vector3();
-let prevTime = performance.now();
-let rainParticles;
-
-// Initialization
-document.getElementById('start-btn').addEventListener('click', () => {
-    document.getElementById('main-menu').style.opacity = '0';
-    setTimeout(() => {
-        document.getElementById('main-menu').style.display = 'none';
-        document.getElementById('gui-wrapper').style.display = 'flex';
-        init();
-        animate();
-        playIntro();
-    }, 2000);
-});
-
-function init() {
-    scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x020202);
-    scene.fog = new THREE.FogExp2(0x020202, 0.04);
-
-    camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-    
-    renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
-    renderer.setPixelRatio(window.devicePixelRatio);
-    renderer.setSize(window.innerWidth, window.innerHeight);
-    renderer.shadowMap.enabled = true;
-    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-    renderer.outputEncoding = THREE.sRGBEncoding;
-    document.body.appendChild(renderer.domElement);
-
-    // Realistic Lighting
-    const ambient = new THREE.AmbientLight(0x404040, 0.05);
-    scene.add(ambient);
-
-    flashLight = new THREE.SpotLight(0xffffff, 2);
-    flashLight.position.set(0, 0, 0);
-    flashLight.angle = Math.PI / 6;
-    flashLight.penumbra = 0.3;
-    flashLight.decay = 2;
-    flashLight.distance = 50;
-    flashLight.castShadow = true;
-    camera.add(flashLight);
-    camera.add(flashLight.target);
-    flashLight.target.position.set(0, 0, -1);
-    scene.add(camera);
-
-    // Floor Texture (PBR Emulation)
-    const floorGeo = new THREE.PlaneGeometry(1000, 1000);
-    const floorMat = new THREE.MeshStandardMaterial({ 
-        color: 0x111111, 
-        roughness: 0.1, 
-        metalness: 0.8 
-    });
-    const floor = new THREE.Mesh(floorGeo, floorMat);
-    floor.rotation.x = -Math.PI / 2;
-    floor.receiveShadow = true;
-    scene.add(floor);
-
-    // Environment: Industrial Hallway
-    createStructure();
-    
-    // Weather System
-    if(document.getElementById('weather').value === 'rain') createRain();
-
-    // Controls Initialization
-    setupControls();
-}
-
-function createStructure() {
-    // Creating realistic concrete pillars and industrial walls
-    const wallMat = new THREE.MeshStandardMaterial({ color: 0x222222, roughness: 0.9 });
-    for(let i = 0; i < 20; i++) {
-        const pillar = new THREE.Mesh(new THREE.BoxGeometry(2, 20, 2), wallMat);
-        pillar.position.set(i % 2 ? 10 : -10, 10, -i * 15);
-        pillar.castShadow = true;
-        scene.add(pillar);
-        
-        // Flickering Wall Light
-        if(i % 4 === 0) {
-            const lamp = new THREE.PointLight(0xffaa00, 0.5, 20);
-            lamp.position.set(i % 2 ? 8 : -8, 12, -i * 15);
-            scene.add(lamp);
-        }
-    }
-}
-
-function createRain() {
-    const geo = new THREE.BufferGeometry();
-    const count = 5000;
-    const pos = new Float32Array(count * 3);
-    for(let i=0; i<count*3; i++) pos[i] = (Math.random() - 0.5) * 100;
-    geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
-    rainParticles = new THREE.Points(geo, new THREE.PointsMaterial({ color: 0xaaaaaa, size: 0.05 }));
-    scene.add(rainParticles);
-}
-
-function playIntro() {
-    const subs = [
-        "Experiment Log: Day 1,402.",
-        "The prototype... it's not breathing, yet it moves.",
-        "If you see the blue light, do not run.",
-        "It likes the chase."
-    ];
-    let i = 0;
-    const interval = setInterval(() => {
-        const el = document.getElementById('subtitles');
-        el.innerText = subs[i];
-        el.style.opacity = 1;
-        setTimeout(() => el.style.opacity = 0, 2500);
-        i++;
-        if(i >= subs.length) clearInterval(interval);
-    }, 4000);
-}
-
-function setupControls() {
-    document.addEventListener('keydown', (e) => {
-        if(e.code === 'KeyW') moveForward = true;
-        if(e.code === 'KeyS') moveBackward = true;
-        if(e.code === 'KeyA') moveLeft = true;
-        if(e.code === 'KeyD') moveRight = true;
-        if(e.code === 'KeyF') flashLight.intensity = flashLight.intensity ? 0 : 2;
-    });
-    document.addEventListener('keyup', (e) => {
-        if(e.code === 'KeyW') moveForward = false;
-        if(e.code === 'KeyS') moveBackward = false;
-        if(e.code === 'KeyA') moveLeft = false;
-        if(e.code === 'KeyD') moveRight = false;
-    });
-    document.body.addEventListener('click', () => {
-        document.body.requestPointerLock();
-    });
-    document.addEventListener('mousemove', (e) => {
-        if(document.pointerLockElement === document.body) {
-            camera.rotation.y -= e.movementX * 0.002;
-            camera.rotation.x -= e.movementY * 0.002;
-        }
-    });
-}
-
-function animate() {
-    requestAnimationFrame(animate);
-    const time = performance.now();
-    const delta = (time - prevTime) / 1000;
-
-    // Head Bobbing Logic (GTA V style realism)
-    if(moveForward || moveBackward || moveLeft || moveRight) {
-        const timer = Date.now() * 0.005;
-        camera.position.y = 1.7 + Math.sin(timer) * 0.05;
-    }
-
-    // Movement Physics
-    velocity.x -= velocity.x * 10.0 * delta;
-    velocity.z -= velocity.z * 10.0 * delta;
-
-    direction.z = Number(moveForward) - Number(moveBackward);
-    direction.x = Number(moveRight) - Number(moveLeft);
-    direction.normalize();
-
-    if (moveForward || moveBackward) velocity.z -= direction.z * 100.0 * delta;
-    if (moveLeft || moveRight) velocity.x -= direction.x * 100.0 * delta;
-
-    camera.translateX(-velocity.x * delta);
-    camera.translateZ(-velocity.z * delta);
-
-    // Rain Animation
-    if(rainParticles) {
-        rainParticles.position.y -= 0.5;
-        if(rainParticles.position.y < -20) rainParticles.position.y = 20;
-    }
-
-    renderer.render(scene, camera);
-    prevTime = time;
-}
-
-window.addEventListener('resize', () => {
-    camera.aspect = window.innerWidth / window.innerHeight;
-    camera.updateProjectionMatrix();
-    renderer.setSize(window.innerWidth, window.innerHeight);
-});
-
-</script>
-</body>
-</html><!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PROJECT: SYNTHETIC ECHO | V1.0</title>
-    <style>
-        :root {
-            --glitch-red: #ff3131;
-            --neon-blue: #00f3ff;
-            --overlay: rgba(0, 0, 0, 0.85);
-        }
-
-        body, html { 
-            margin: 0; padding: 0; width: 100%; height: 100%; 
-            overflow: hidden; background: #000; color: #fff;
-            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-        }
-
-        /* Cinematic HUD */
-        #gui-wrapper {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            pointer-events: none; z-index: 10;
-            display: flex; flex-direction: column; justify-content: space-between;
-        }
-
-        /* CRT Filter Overlay */
         #crt-overlay {
-            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
-            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), 
-                        linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
-            background-size: 100% 4px, 3px 100%; pointer-events: none; z-index: 100;
-        }
-
-        .scanner-line {
-            position: absolute; width: 100%; height: 100px;
-            background: linear-gradient(to bottom, transparent, rgba(0, 243, 255, 0.05), transparent);
-            animation: scan 8s linear infinite;
-        }
-
-        @keyframes scan { from { top: -100px; } to { top: 100%; } }
-
-        /* Bottom Controls Gradient */
-        #controls-legend {
-            background: linear-gradient(transparent, rgba(0,0,0,0.9));
-            padding: 30px; display: flex; justify-content: center; gap: 25px;
-            font-size: 12px; letter-spacing: 2px; color: #888;
-            border-top: 1px solid rgba(0, 243, 255, 0.1);
-        }
-
-        .key-hint { color: var(--neon-blue); font-weight: bold; border: 1px solid #333; padding: 2px 8px; border-radius: 4px; }
-
-        /* Intro Sequence */
-        #main-menu {
-            position: fixed; z-index: 1000; width: 100%; height: 100%;
-            background: radial-gradient(circle, #1a1a1a 0%, #000 100%);
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
-            transition: opacity 2s ease;
-        }
-
-        .glitch-title {
-            font-size: 5rem; font-weight: 900; text-transform: uppercase;
-            position: relative; text-shadow: 0.05em 0 0 var(--glitch-red), -0.05em -0.025em 0 var(--neon-blue);
-            animation: glitch 1s infinite;
-        }
-
-        @keyframes glitch {
-            0% { transform: translate(0) }
-            20% { transform: translate(-3px, 3px) }
-            40% { transform: translate(-3px, -3px) }
-            60% { transform: translate(3px, 3px) }
-            80% { transform: translate(3px, -3px) }
-            100% { transform: translate(0) }
-        }
-
-        #subtitles {
-            position: absolute; bottom: 150px; width: 100%; text-align: center;
-            font-size: 20px; color: #eee; text-shadow: 2px 2px 10px #000;
-            font-style: italic; opacity: 0; transition: opacity 0.5s;
-        }
-
-        #crosshair {
-            position: absolute; top: 50%; left: 50%; width: 10px; height: 10px;
-            border: 1px solid rgba(255,255,255,0.3); border-radius: 50%;
-            transform: translate(-50%, -50%);
+            pointer-events: none; /* Allows clicks to pass through the filter */
+            z-index: 1500;
         }
     </style>
 </head>
@@ -424,7 +119,7 @@ window.addEventListener('resize', () => {
             </select>
         </label>
     </div>
-    <button id="start-btn" style="background: none; border: 2px solid var(--neon-blue); color: #fff; padding: 15px 50px; cursor: pointer; font-size: 1.2rem;">ENTER FACILITY</button>
+    <button id="start-btn" onclick="initializeGame()" style="background: none; border: 2px solid var(--neon-blue); color: #fff; padding: 15px 50px; cursor: pointer; font-size: 1.2rem;">ENTER FACILITY</button>
 </div>
 
 <div id="gui-wrapper" style="display:none;">
@@ -454,16 +149,21 @@ let prevTime = performance.now();
 let rainParticles;
 
 // Initialization
-document.getElementById('start-btn').addEventListener('click', () => {
-    document.getElementById('main-menu').style.opacity = '0';
+function initializeGame() {
+    console.log("Initializing Facility..."); // Check your console (F12) to see if this triggers
+    
+    const menu = document.getElementById('main-menu');
+    menu.style.opacity = '0';
+    
+    // Add a slight delay for the fade effect before starting the 3D engine
     setTimeout(() => {
-        document.getElementById('main-menu').style.display = 'none';
+        menu.style.display = 'none';
         document.getElementById('gui-wrapper').style.display = 'flex';
-        init();
-        animate();
-        playIntro();
-    }, 2000);
-});
+        init(); // Starts the 3D Scene
+        animate(); // Starts the Loop
+        playIntro(); // Starts the Story
+    }, 1000);
+}
 
 function init() {
     scene = new THREE.Scene();

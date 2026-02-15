@@ -1,18 +1,565 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<title>ECHO SHIFT: SECTION 9</title>
-<link rel="stylesheet" href="style.css">
+    <meta charset="UTF-8">
+    <title>PROJECT: SYNTHETIC ECHO</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap');
+
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: #000;
+            font-family: 'Share Tech Mono', monospace;
+            user-select: none;
+        }
+
+        #ui-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            z-index: 10;
+        }
+
+        /* Vignette & Grain Overlay for Horror Vibe */
+        #screen-fx {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle, transparent 50%, #000 150%);
+            box-shadow: inset 0 0 100px #000;
+            z-index: 1;
+            pointer-events: none;
+        }
+
+        /* Intro Video Container */
+        #intro-screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #000;
+            color: #fff;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+            pointer-events: all;
+            text-align: center;
+        }
+
+        #intro-text {
+            font-size: 24px;
+            max-width: 600px;
+            line-height: 1.5;
+            color: #00ffcc;
+            text-shadow: 0 0 10px #00ffcc;
+        }
+
+        .btn {
+            margin-top: 30px;
+            padding: 15px 40px;
+            background: transparent;
+            border: 2px solid #00ffcc;
+            color: #00ffcc;
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 20px;
+            cursor: pointer;
+            transition: 0.3s;
+            text-transform: uppercase;
+        }
+
+        .btn:hover {
+            background: #00ffcc;
+            color: #000;
+            box-shadow: 0 0 20px #00ffcc;
+        }
+
+        #settings-menu {
+            margin-bottom: 20px;
+        }
+
+        /* Game UI */
+        #hud-top {
+            padding: 20px;
+            display: flex;
+            justify-content: space-between;
+            color: rgba(255, 255, 255, 0.8);
+        }
+
+        #stamina-bar-container {
+            width: 200px;
+            height: 10px;
+            background: #333;
+            border: 1px solid #555;
+        }
+
+        #stamina-bar {
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, #ffcc00, #ff6600);
+            transition: width 0.1s;
+        }
+
+        #subtitle-container {
+            text-align: center;
+            margin-bottom: 20%;
+            color: #fff;
+            font-size: 18px;
+            text-shadow: 0 2px 4px #000;
+            height: 30px;
+        }
+
+        #controls-bar {
+            background: linear-gradient(0deg, rgba(0,0,0,0.9) 0%, transparent 100%);
+            padding: 15px;
+            color: #aaa;
+            font-size: 14px;
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            border-top: 1px solid #333;
+        }
+
+        .key {
+            border: 1px solid #666;
+            padding: 2px 6px;
+            border-radius: 4px;
+            color: #fff;
+            background: #222;
+        }
+
+        #crosshair {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 4px;
+            height: 4px;
+            background: white;
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            box-shadow: 0 0 5px white;
+            z-index: 5;
+        }
+
+        /* Glitch Effect Class */
+        .glitch {
+            animation: glitch 1s linear infinite;
+        }
+
+        @keyframes glitch {
+            2%, 64% { transform: translate(2px,0) skew(0deg); }
+            4%, 60% { transform: translate(-2px,0) skew(0deg); }
+            62% { transform: translate(0,0) skew(5deg); }
+        }
+    </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/PointerLockControls.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/simplex-noise/2.4.0/simplex-noise.min.js"></script>
 </head>
-<<body>
-  <div id="intro">
-    <h1>ECHO SHIFT</h1>
-    <p>If you're hearing this... you already entered.</p>
-    <button id="startBtn">Click to wake up</button>
-  </div>
+<body>
 
-  <div id="subtitle"></div>
-  <script src="game.js"></script>
+    <div id="screen-fx"></div>
+    <div id="crosshair"></div>
+
+    <div id="intro-screen">
+        <h1 style="color: #ff3333; font-size: 60px; text-shadow: 0 0 20px #ff0000;">PROJECT: SYNTHETIC ECHO</h1>
+        <p>WARNING: MATURE CONTENT (16+). PSYCHOLOGICAL HORROR.</p>
+        
+        <div id="settings-menu">
+            <label style="margin-right: 15px;">CHARACTER: 
+                <select id="gender-select" style="background:#000; color:#00ffcc; border:1px solid #00ffcc; padding:5px;">
+                    <option value="female">FEMALE (Agile)</option>
+                    <option value="male">MALE (Robust)</option>
+                </select>
+            </label>
+            <label>WEATHER: 
+                <select id="weather-select" style="background:#000; color:#00ffcc; border:1px solid #00ffcc; padding:5px;">
+                    <option value="storm">STORM</option>
+                    <option value="clear">CLEAR (Foggy)</option>
+                </select>
+            </label>
+        </div>
+
+        <div id="intro-text">
+            "They said the factory was abandoned. They lied.<br>
+            The Playtime Co. initiative didn't end... it evolved."
+        </div>
+        <button class="btn" onclick="startGame()">INITIALIZE LINK</button>
+    </div>
+
+    <div id="ui-layer" style="display:none;">
+        <div id="hud-top">
+            <div>OBJECTIVE: Find the Red Keycard</div>
+            <div>
+                STAMINA
+                <div id="stamina-bar-container"><div id="stamina-bar"></div></div>
+            </div>
+        </div>
+        
+        <div>
+            <div id="subtitle-container"></div>
+            <div id="controls-bar">
+                <span><span class="key">W</span><span class="key">A</span><span class="key">S</span><span class="key">D</span> MOVE</span>
+                <span><span class="key">SHIFT</span> SPRINT</span>
+                <span><span class="key">C</span> CROUCH</span>
+                <span><span class="key">F</span> FLASHLIGHT</span>
+                <span><span class="key">SPACE</span> JUMP</span>
+            </div>
+        </div>
+    </div>
+
+<script>
+    // --- CONFIGURATION ---
+    let camera, scene, renderer, controls;
+    let moveForward = false, moveBackward = false, moveLeft = false, moveRight = false;
+    let canJump = false;
+    let isSprinting = false;
+    let isCrouching = false;
+    
+    // Physics / Player vars
+    let prevTime = performance.now();
+    const velocity = new THREE.Vector3();
+    const direction = new THREE.Vector3();
+    let playerHeight = 1.8; // changes based on gender
+    let stamina = 100;
+
+    // Game State
+    let flashLightOn = true;
+    let lightningActive = false;
+    let rainSystem;
+    
+    // Audio Context (Synthesized sound)
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    
+    // DOM Elements
+    const staminaEl = document.getElementById('stamina-bar');
+    const subtitleEl = document.getElementById('subtitle-container');
+
+    function startGame() {
+        const gender = document.getElementById('gender-select').value;
+        const weather = document.getElementById('weather-select').value;
+        lightningActive = (weather === 'storm');
+
+        // Apply settings
+        playerHeight = (gender === 'female') ? 1.6 : 1.9;
+        
+        // Hide Intro, Show UI
+        document.getElementById('intro-screen').style.display = 'none';
+        document.getElementById('ui-layer').style.display = 'flex';
+
+        init3D(weather);
+        animate();
+
+        // Intro Audio Cue
+        playSynthSound(100, 'sawtooth', 1.5); // ominous start
+        showSubtitle("System: Bio-signature accepted. Welcome to Sector 4.", 3000);
+    }
+
+    function init3D(weatherType) {
+        scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x050505);
+        scene.fog = new THREE.FogExp2(0x050505, 0.025);
+
+        camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        
+        renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.shadowMap.enabled = true; // Realistic shadows
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        document.body.appendChild(renderer.domElement);
+
+        // CONTROLS
+        controls = new THREE.PointerLockControls(camera, document.body);
+        
+        document.addEventListener('click', () => {
+            controls.lock();
+        });
+
+        scene.add(controls.getObject());
+
+        // LIGHTING
+        // Ambient (very dark)
+        const ambientLight = new THREE.AmbientLight(0x404040, 0.2); 
+        scene.add(ambientLight);
+
+        // Flashlight (Spotlight attached to camera)
+        const spotLight = new THREE.SpotLight(0xffffff, 1);
+        spotLight.position.set(0, 0, 0); // Relative to camera
+        spotLight.angle = 0.6;
+        spotLight.penumbra = 0.5;
+        spotLight.decay = 2;
+        spotLight.distance = 40;
+        spotLight.castShadow = true;
+        camera.add(spotLight);
+        scene.add(camera); // Add camera to scene so light moves with it
+        
+        window.flashlightRef = spotLight; // Global ref to toggle
+
+        // --- WORLD GENERATION (Procedural Textures) ---
+        
+        // Floor (Simulating Grass/Concrete mix)
+        const floorGeometry = new THREE.PlaneGeometry(200, 200, 100, 100);
+        floorGeometry.rotateX(-Math.PI / 2);
+        
+        // Create vertex displacement for realistic terrain
+        const positionAttribute = floorGeometry.attributes.position;
+        const vertex = new THREE.Vector3();
+        const noise = new SimplexNoise();
+
+        for ( let i = 0; i < positionAttribute.count; i ++ ) {
+            vertex.fromBufferAttribute( positionAttribute, i );
+            // Slight unevenness
+            vertex.z += noise.noise2D(vertex.x * 0.1, vertex.y * 0.1) * 0.5; 
+            positionAttribute.setXYZ( i, vertex.x, vertex.y, vertex.z );
+        }
+        
+        const floorMaterial = new THREE.MeshStandardMaterial({ 
+            color: 0x1a1a1a, 
+            roughness: 0.8,
+            metalness: 0.2
+        });
+        const floor = new THREE.Mesh(floorGeometry, floorMaterial);
+        floor.receiveShadow = true;
+        scene.add(floor);
+
+        // Walls / Factory Structure
+        const wallGeo = new THREE.BoxGeometry(10, 20, 1);
+        const wallMat = new THREE.MeshStandardMaterial({ color: 0x333333, roughness: 0.1 }); // shiny walls
+        
+        for(let i=0; i<10; i++) {
+            const wall = new THREE.Mesh(wallGeo, wallMat);
+            wall.position.x = (Math.random() - 0.5) * 100;
+            wall.position.z = (Math.random() - 0.5) * 100;
+            wall.position.y = 10;
+            wall.castShadow = true;
+            wall.receiveShadow = true;
+            scene.add(wall);
+        }
+
+        // "Water" Pool
+        const waterGeo = new THREE.CircleGeometry(20, 32);
+        const waterMat = new THREE.MeshStandardMaterial({
+            color: 0x001133,
+            transparent: true,
+            opacity: 0.8,
+            roughness: 0.0,
+            metalness: 1.0
+        });
+        const water = new THREE.Mesh(waterGeo, waterMat);
+        water.rotation.x = -Math.PI / 2;
+        water.position.y = 0.1;
+        water.position.z = -30;
+        scene.add(water);
+
+        // The "Monster" (Abstract representation)
+        // Since we can't load Poppy Playtime assets, we create a creepy glowing entity
+        const monsterGeo = new THREE.CylinderGeometry(0.5, 0.5, 3, 32);
+        const monsterMat = new THREE.MeshStandardMaterial({ 
+            color: 0xff0000, 
+            emissive: 0x550000,
+            emissiveIntensity: 0.5
+        });
+        window.monster = new THREE.Mesh(monsterGeo, monsterMat);
+        monster.position.set(0, 1.5, -40);
+        monster.castShadow = true;
+        scene.add(monster);
+
+        // --- WEATHER (RAIN) ---
+        if(weatherType === 'storm') {
+            const rainGeo = new THREE.BufferGeometry();
+            const rainCount = 15000;
+            const rainPos = new Float32Array(rainCount * 3);
+            for(let i=0; i<rainCount*3; i++) {
+                rainPos[i] = (Math.random() - 0.5) * 200;
+            }
+            rainGeo.setAttribute('position', new THREE.BufferAttribute(rainPos, 3));
+            const rainMat = new THREE.PointsMaterial({
+                color: 0xaaaaaa,
+                size: 0.1,
+                transparent: true
+            });
+            rainSystem = new THREE.Points(rainGeo, rainMat);
+            scene.add(rainSystem);
+            
+            // Lightning Light
+            window.lightningLight = new THREE.PointLight(0xaaddff, 0, 500);
+            window.lightningLight.position.set(0, 50, 0);
+            scene.add(window.lightningLight);
+        }
+
+        // INPUT LISTENERS
+        const onKeyDown = function (event) {
+            switch (event.code) {
+                case 'ArrowUp': case 'KeyW': moveForward = true; break;
+                case 'ArrowLeft': case 'KeyA': moveLeft = true; break;
+                case 'ArrowDown': case 'KeyS': moveBackward = true; break;
+                case 'ArrowRight': case 'KeyD': moveRight = true; break;
+                case 'Space': if (canJump === true) velocity.y += 35; canJump = false; break;
+                case 'ShiftLeft': isSprinting = true; break;
+                case 'KeyC': 
+                    isCrouching = true; 
+                    controls.getObject().position.y -= 0.5; 
+                    break;
+                case 'KeyF':
+                    flashLightOn = !flashLightOn;
+                    window.flashlightRef.intensity = flashLightOn ? 1 : 0;
+                    playClickSound();
+                    break;
+            }
+        };
+
+        const onKeyUp = function (event) {
+            switch (event.code) {
+                case 'ArrowUp': case 'KeyW': moveForward = false; break;
+                case 'ArrowLeft': case 'KeyA': moveLeft = false; break;
+                case 'ArrowDown': case 'KeyS': moveBackward = false; break;
+                case 'ArrowRight': case 'KeyD': moveRight = false; break;
+                case 'ShiftLeft': isSprinting = false; break;
+                case 'KeyC': 
+                    isCrouching = false; 
+                    controls.getObject().position.y += 0.5;
+                    break;
+            }
+        };
+
+        document.addEventListener('keydown', onKeyDown);
+        document.addEventListener('keyup', onKeyUp);
+        
+        window.addEventListener('resize', onWindowResize, false);
+    }
+
+    function onWindowResize() {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+    }
+
+    // --- GAME LOGIC ---
+    function animate() {
+        requestAnimationFrame(animate);
+
+        const time = performance.now();
+        
+        if (controls.isLocked === true) {
+            
+            const delta = (time - prevTime) / 1000;
+
+            // Stamina Logic
+            if(isSprinting && (moveForward || moveBackward || moveLeft || moveRight)) {
+                stamina = Math.max(0, stamina - 0.5);
+            } else {
+                stamina = Math.min(100, stamina + 0.2);
+            }
+            staminaEl.style.width = stamina + '%';
+            
+            // Movement speed based on Gender & Sprint
+            let speed = 40.0; // Base speed
+            if (isSprinting && stamina > 0) speed = 80.0;
+            if (isCrouching) speed = 20.0;
+
+            velocity.x -= velocity.x * 10.0 * delta;
+            velocity.z -= velocity.z * 10.0 * delta;
+            velocity.y -= 9.8 * 10.0 * delta; // Gravity
+
+            direction.z = Number(moveForward) - Number(moveBackward);
+            direction.x = Number(moveRight) - Number(moveLeft);
+            direction.normalize();
+
+            if (moveForward || moveBackward) velocity.z -= direction.z * speed * delta;
+            if (moveLeft || moveRight) velocity.x -= direction.x * speed * delta;
+
+            controls.moveRight(-velocity.x * delta);
+            controls.moveForward(-velocity.z * delta);
+            controls.getObject().position.y += (velocity.y * delta); // Jump
+
+            // Floor Collision
+            if (controls.getObject().position.y < playerHeight) {
+                velocity.y = 0;
+                controls.getObject().position.y = playerHeight;
+                canJump = true;
+            }
+
+            // --- HORROR ELEMENTS ---
+            
+            // Rain Animation
+            if(rainSystem) {
+                rainSystem.rotation.y += 0.002;
+                const positions = rainSystem.geometry.attributes.position.array;
+                for(let i=1; i<positions.length; i+=3) {
+                    positions[i] -= 2; // Fall down
+                    if(positions[i] < 0) positions[i] = 50;
+                }
+                rainSystem.geometry.attributes.position.needsUpdate = true;
+
+                // Random Lightning
+                if(Math.random() > 0.995) {
+                    window.lightningLight.intensity = 10;
+                    playSynthSound(200, 'square', 0.2); // Thunder crack
+                    setTimeout(() => window.lightningLight.intensity = 0, 100);
+                }
+            }
+
+            // Monster Logic (Stalking)
+            const playerPos = controls.getObject().position;
+            const dist = playerPos.distanceTo(window.monster.position);
+            
+            if(dist < 50 && dist > 5) {
+                // Move monster towards player slowly
+                window.monster.lookAt(playerPos);
+                window.monster.translateZ(0.05);
+                
+                // Dynamic Audio Breath
+                if(Math.random() > 0.99) showSubtitle("*Heavy breathing nearby*", 1000);
+            } else if (dist < 5) {
+                // Jumpscare reset
+                showSubtitle("CAUGHT YOU.", 2000);
+                controls.unlock();
+                document.getElementById('intro-screen').style.display = 'flex';
+                // Reset position
+                controls.getObject().position.set(0, 10, 0);
+                window.monster.position.set(0, 1.5, -40);
+            }
+
+        }
+
+        prevTime = time;
+        renderer.render(scene, camera);
+    }
+
+    // --- UTILS ---
+    
+    function showSubtitle(text, duration) {
+        subtitleEl.innerText = text;
+        setTimeout(() => subtitleEl.innerText = "", duration);
+    }
+
+    // Synthesized Sound Generator (No external files needed)
+    function playSynthSound(freq, type, duration) {
+        if(audioCtx.state === 'suspended') audioCtx.resume();
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = type; // 'sine', 'square', 'sawtooth', 'triangle'
+        osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start();
+        gain.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime + duration);
+        osc.stop(audioCtx.currentTime + duration);
+    }
+
+    function playClickSound() {
+        playSynthSound(800, 'sine', 0.1);
+    }
+
+</script>
 </body>
-
 </html>

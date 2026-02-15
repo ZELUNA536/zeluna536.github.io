@@ -1,0 +1,23 @@
+* { margin:0; padding:0; overflow:hidden; font-family:Arial }
+body { background:black; }
+
+#intro {
+  position:fixed; inset:0;
+  background:radial-gradient(#000,#050505);
+  color:white; display:flex;
+  align-items:center; justify-content:center;
+  text-align:center; z-index:10;
+}
+
+#intro h1 { font-size:64px; letter-spacing:6px; }
+.small { opacity:0.6; margin-top:30px; }
+
+#hud {
+  position:fixed; bottom:20px; left:50%;
+  transform:translateX(-50%);
+  display:flex; gap:20px;
+  padding:10px 20px;
+  background:linear-gradient(90deg,#0f2027,#203a43,#2c5364);
+  color:white; border-radius:20px;
+  font-size:12px; opacity:0.85;
+}

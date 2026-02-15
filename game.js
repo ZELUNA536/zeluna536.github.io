@@ -37,7 +37,16 @@ onmousemove = e => {
 };
 
 // Intro start
-document.getElementById("intro").onclick = () => {
+const startBtn = document.getElementById("startBtn");
+const intro = document.getElementById("intro");
+
+startBtn.addEventListener("click", () => {
+  intro.style.display = "none";
+  canvas.requestPointerLock();
+  subtitle("Subject 09 regained consciousness");
+  loop();
+});
+
   document.getElementById("intro").style.display = "none";
   canvas.requestPointerLock();
   loop();

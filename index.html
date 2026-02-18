@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DeepSeek-style AI · chat + image gen</title>
+    <title>Nova · coding expert</title>
     <style>
         * {
             margin: 0;
@@ -21,7 +21,6 @@
             padding: 1.5rem;
         }
 
-        /* main container – similar to deepseek two-column layout */
         .app {
             width: 1400px;
             max-width: 100%;
@@ -35,7 +34,6 @@
             backdrop-filter: blur(2px);
         }
 
-        /* left sidebar (optional) – but we keep minimal, like deepseek web */
         .left-panel {
             width: 260px;
             background: #1a1e26;
@@ -84,7 +82,6 @@
             color: white;
         }
 
-        /* right side – main chat + generation */
         .main-panel {
             flex: 1;
             display: flex;
@@ -93,7 +90,6 @@
             position: relative;
         }
 
-        /* header – resembles deepseek minimal top bar */
         .chat-header {
             padding: 20px 28px;
             border-bottom: 1px solid #2c313c;
@@ -117,7 +113,6 @@
             color: #949fb0;
         }
 
-        /* messages area – scrolling */
         .message-stream {
             flex: 1;
             overflow-y: auto;
@@ -129,7 +124,6 @@
             background: #20242c;
         }
 
-        /* common message style */
         .message {
             display: flex;
             gap: 16px;
@@ -176,44 +170,6 @@
             color: #eef9ff;
         }
 
-        /* image generation preview */
-        .image-result {
-            margin-top: 16px;
-            border-radius: 24px;
-            overflow: hidden;
-            background: #1b2129;
-            padding: 12px;
-            border: 1px solid #3b4350;
-            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.4);
-        }
-        .image-result img {
-            max-width: 100%;
-            border-radius: 18px;
-            display: block;
-            border: 1px solid #49576b;
-            transition: transform 0.2s;
-        }
-        .image-result img:hover {
-            transform: scale(1.01);
-        }
-        .image-caption {
-            color: #a3b3cf;
-            font-size: 0.8rem;
-            margin-top: 8px;
-            display: flex;
-            gap: 8px;
-            align-items: center;
-        }
-        .pill {
-            background: #1e293b;
-            padding: 4px 12px;
-            border-radius: 30px;
-            color: #aec9f0;
-            font-size: 0.75rem;
-            border: 1px solid #3e5068;
-        }
-
-        /* typing indicator */
         .typing-indicator {
             display: flex;
             gap: 6px;
@@ -232,7 +188,6 @@
             animation: blink 1.4s infinite;
         }
 
-        /* input area – exactly deepseek style */
         .input-area {
             padding: 18px 28px 24px 28px;
             background: #1e222a;
@@ -301,7 +256,6 @@
             color: white;
         }
 
-        /* image gen toggle or info */
         .gen-badge {
             font-size: 0.8rem;
             margin-right: 16px;
@@ -312,7 +266,6 @@
             border: 1px solid #3e5570;
         }
 
-        /* animations */
         @keyframes fadeIn {
             from { opacity: 0; transform: translateY(10px); }
             to { opacity: 1; transform: translateY(0); }
@@ -325,30 +278,29 @@
 </head>
 <body>
 <div class="app">
-    <!-- left sidebar (minimal, just for look) -->
     <div class="left-panel">
         <button class="new-chat-btn" id="new-chat-btn">
             <span>+</span> New chat
         </button>
         <div style="margin-top: 8px;">
-            <div class="history-item active">✨ Real image gen</div>
-            <div class="history-item">📸 previous session</div>
-            <div class="history-item">⚡ deep-like chat</div>
+            <div class="history-item active">Coding session</div>
+            <div class="history-item">Algorithm design</div>
+            <div class="history-item">Debug help</div>
+            <div class="history-item">Code review</div>
         </div>
         <div style="flex:1"></div>
         <div style="color:#5f6c82; font-size:0.8rem; padding:16px 12px; border-top:1px solid #2b313d;">
             <div style="display:flex; gap:8px; align-items:center;">
-                <span>🧠</span> <span>DeepSeek · v1.0</span>
+                <span>⌨️</span> <span>Nova · coding expert</span>
             </div>
         </div>
     </div>
 
-    <!-- main chat panel -->
     <div class="main-panel">
         <div class="chat-header">
             <div style="display: flex; align-items: center; gap: 12px;">
-                <span style="font-weight:600;">DeepSeek</span>
-                <span class="model-badge">creative mode · image ready</span>
+                <span style="font-weight:600;">Nova</span>
+                <span class="model-badge">coding expert · debug · explain</span>
             </div>
             <div class="header-icons">
                 <span>📁</span>
@@ -357,26 +309,22 @@
             </div>
         </div>
 
-        <!-- messages container -->
         <div class="message-stream" id="message-stream">
-            <!-- welcome message -->
             <div class="message assistant">
-                <div class="avatar">AI</div>
+                <div class="avatar">N</div>
                 <div class="bubble">
-                    HI, I'm your NOVA assistant. I can chat, answer questions, and **generate ultra‑realistic images**.<br>
-                    Just describe what you want — for example: <i>"a photorealistic cat on a Venice balcony"</i> or <i>"a cozy library with sunlight"</i>
+                    I am Nova, a coding expert. I can help you write, debug, and understand code in any programming language. Ask me about algorithms, system design, or refactoring.
                 </div>
             </div>
         </div>
 
-        <!-- input & controls -->
         <div class="input-area">
             <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 10px; padding-left: 8px;">
-                <span class="gen-badge">🎨 image generation • realistic</span>
-                <span style="color:#6f7c94; font-size:0.85rem;">(describe any scene)</span>
+                <span class="gen-badge">⎇ code · algorithms · explanations</span>
+                <span style="color:#6f7c94; font-size:0.85rem;">(paste code or ask any coding question)</span>
             </div>
             <div class="input-wrapper">
-                <textarea id="user-input" placeholder="Message DeepSeek..." rows="1"></textarea>
+                <textarea id="user-input" placeholder="Message Nova..." rows="1"></textarea>
                 <div class="action-buttons">
                     <button class="icon-btn" id="attach-btn" disabled style="opacity:0.5;">📎</button>
                     <button class="icon-btn send-btn" id="send-btn">➤</button>
@@ -388,54 +336,31 @@
 
 <script>
     (function() {
-        // ----- DOM elements -----
         const streamEl = document.getElementById('message-stream');
         const userInput = document.getElementById('user-input');
         const sendBtn = document.getElementById('send-btn');
         const newChatBtn = document.getElementById('new-chat-btn');
 
-        // ----- state -----
         let isWaitingReply = false;
 
-        // ----- helper: add message to chat -----
-        function addMessage(role, text, imageUrl = null) {
+        function addMessage(role, text) {
             const messageDiv = document.createElement('div');
             messageDiv.className = `message ${role}`;
 
             const avatar = document.createElement('div');
             avatar.className = 'avatar';
-            avatar.textContent = role === 'user' ? 'U' : 'AI';
+            avatar.textContent = role === 'user' ? 'U' : 'N';
 
             const bubble = document.createElement('div');
             bubble.className = 'bubble';
-
-            // support line breaks / simple markdown style (just for cleaner look)
-            const formattedText = text.replace(/\*\*(.*?)\*\*/g, '<b>$1</b>').replace(/\n/g, '<br>');
-            bubble.innerHTML = formattedText;
+            bubble.textContent = text;
 
             messageDiv.appendChild(avatar);
             messageDiv.appendChild(bubble);
-
-            // if there's an image, append image block inside bubble (or after? but inside feels better)
-            if (imageUrl) {
-                const imgContainer = document.createElement('div');
-                imgContainer.className = 'image-result';
-                imgContainer.innerHTML = `
-                    <img src="${imageUrl}" alt="generated" loading="lazy">
-                    <div class="image-caption">
-                        <span class="pill">✨ realistic</span>
-                        <span style="flex:1; text-align:right;">🔍 prompt based</span>
-                    </div>
-                `;
-                bubble.appendChild(imgContainer);   // inside bubble
-            }
-
             streamEl.appendChild(messageDiv);
-            // scroll to bottom
             streamEl.scrollTop = streamEl.scrollHeight;
         }
 
-        // ----- show typing indicator -----
         function showTypingIndicator() {
             const indicatorDiv = document.createElement('div');
             indicatorDiv.className = 'typing-indicator';
@@ -450,167 +375,51 @@
             if (indicator) indicator.remove();
         }
 
-        // ----- generate realistic image (deterministic based on prompt) -----
-        function generateRealisticImageURL(prompt) {
-            // Use a set of high-quality unsplash / likelike real images based on keyword.
-            // For realism we use unsplash images + seed modification to feel unique.
-            // But we want them to be 'feels real' – we use unsplash with real photos.
-            const base = "https://images.unsplash.com/";
-            // map keywords to real unsplash IDs (all CC0 / free)
-            const imagePool = [
-                { keywords: ['cat', 'kitten', 'feline'], url: "photo-1574158622682-e40e69881006?w=900&auto=format&fit=crop", desc: "cat on balcony" }, // cat
-                { keywords: ['dog', 'puppy'], url: "photo-1543466835-00a8f6d9b8b8?w=900&auto=format&fit=crop", desc: "happy dog" },
-                { keywords: ['landscape', 'mountain', 'alps', 'nature'], url: "photo-1506905925346-21bda4d32df4?w=900&auto=format&fit=crop", desc: "mountain road" },
-                { keywords: ['beach', 'ocean', 'sea', 'waves'], url: "photo-1507525425510-1e2d6b4a4f2f?w=900&auto=format&fit=crop", desc: "tropical beach" },
-                { keywords: ['city', 'street', 'urban', 'downtown'], url: "photo-1466978913421-dad2ebd01d17?w=900&auto=format&fit=crop", desc: "city streets" },
-                { keywords: ['forest', 'woods', 'tree'], url: "photo-1441974231531-c6227db76b6e?w=900&auto=format&fit=crop", desc: "sunlit forest" },
-                { keywords: ['library', 'book', 'reading'], url: "photo-1524995997946-a1c2e315a42f?w=900&auto=format&fit=crop", desc: "library" },
-                { keywords: ['coffee', 'cafe', 'latte'], url: "photo-1461023058943-07fcbe16d735?w=900&auto=format&fit=crop", desc: "coffee cup" },
-                { keywords: ['space', 'astronaut', 'galaxy'], url: "photo-1541185933-ef5d8ed016c2?w=900&auto=format&fit=crop", desc: "astronaut" }, // realistic astronaut
-                { keywords: ['food', 'pizza', 'meal'], url: "photo-1565299624946-b28f40a0ae38?w=900&auto=format&fit=crop", desc: "pizza" },
-                { keywords: ['person', 'portrait', 'face'], url: "photo-1507003211169-0a1dd7228f2d?w=900&auto=format&fit=crop", desc: "portrait" },
-                { keywords: ['car', 'auto', 'vehicle'], url: "photo-1555215695-3004980ad54e?w=900&auto=format&fit=crop", desc: "sports car" }
-            ];
-            // fallback universal real unsplash (beautiful nature)
-            const fallbackUrl = "photo-1506744038136-46273834b3fb?w=900&auto=format&fit=crop"; // valle
-
-            const lowerPrompt = prompt.toLowerCase();
-            let selected = null;
-            for (let item of imagePool) {
-                if (item.keywords.some(kw => lowerPrompt.includes(kw))) {
-                    selected = item;
-                    break;
-                }
-            }
-            const id = selected ? selected.url : fallbackUrl;
-            // add a dummy 'seed' based on prompt length to avoid same image for identical prompt if needed
-            const seedParam = `&q=80&seed=${prompt.length}${prompt.charCodeAt(0) || 0}`;
-            return base + id + seedParam;
-        }
-
-        // ----- generate reply (mimic assistant + optionally image) -----
         function generateAssistantReply(userMessage) {
             showTypingIndicator();
 
-            // Simulate network delay (realistic feel)
             setTimeout(() => {
                 removeTypingIndicator();
 
-                // default answer (text part)
                 let answerText = '';
-                let imageUrl = null;
-
                 const lowerMsg = userMessage.toLowerCase();
 
-                // DETECT if user likely wants an image: if message contains words like "generate", "create", "image", "picture", "photorealistic", "draw", "make" plus scene words.
-                const imageTriggers = ['generate', 'create an image', 'make an image', 'draw', 'picture', 'photorealistic', 'realistic image', 'photo of', 'take a photo', 'generate image', 'show me ', 'image of ', 'a photo'];
-                const wantsImage = imageTriggers.some(trigger => lowerMsg.includes(trigger)) || 
-                                   (lowerMsg.includes('image') && !lowerMsg.includes('no image')) ||
-                                   lowerMsg.includes('realistic') || lowerMsg.includes('photoreal');
-
-                if (wantsImage) {
-                    // try to extract subject after keywords, but we also use full prompt for image url.
-                    // We'll produce a descriptive answer plus the image.
-                    answerText = "Here's a **realistic image** based on your description:\n\n" + 
-                                 "I've used my generative capabilities to create this — it should feel like a photograph.";
-                    imageUrl = generateRealisticImageURL(userMessage);
-                } else {
-                    // pure conversational answer (deepseek-like)
-                    if (lowerMsg.includes('hello') || lowerMsg.includes('hi')) {
-                        answerText = "Hello! I'm your AI assistant. How can I help you today? You can ask me anything or request an image.";
-                    } else if (lowerMsg.includes('ability') || lowerMsg.includes('capable')) {
-                        answerText = "I have all the core abilities of DeepSeek: natural conversation, reasoning, coding, and **image generation** (just ask for a realistic picture). Try saying *'generate a photorealistic sunset beach'*.";
-                    } else if (lowerMsg.includes('thank')) {
-                        answerText = "You're very welcome! Let me know if you need anything else – text or image.";
-                    } else if (lowerMsg.includes('who are you')) {
-                        answerText = "I'm a full-featured AI chatbot inspired by DeepSeek. I support realistic image generation based on prompts. What would you like to explore?";
-                    } else {
-                        answerText = "I understand. I'm here to chat, answer questions, or create realistic images. Feel free to describe a scene, and I'll generate a photo-like result for you!";
-                    }
+                if (lowerMsg.includes('python') || lowerMsg.includes('javascript') || lowerMsg.includes('java') || lowerMsg.includes('c++') || lowerMsg.includes('rust')) {
+                    answerText = "Here is a code snippet that might help:\n\n```\n// Example code\nfunction example() {\n  console.log('Hello from Nova');\n}\n```\n\nYou can adapt this to your specific use case. Let me know if you need further explanation.";
+                }
+                else if (lowerMsg.includes('debug') || lowerMsg.includes('error') || lowerMsg.includes('bug')) {
+                    answerText = "To debug this, first check the error message. Common issues include null references, off-by-one errors, and type mismatches. Could you share the error log or the problematic code block?";
+                }
+                else if (lowerMsg.includes('algorithm') || lowerMsg.includes('complexity') || lowerMsg.includes('big o')) {
+                    answerText = "When analyzing algorithm complexity, consider time vs space tradeoffs. For sorting, QuickSort averages O(n log n) but has worst-case O(n²). For search, binary search requires sorted data and runs in O(log n). What specific algorithm are you working on?";
+                }
+                else if (lowerMsg.includes('hello') || lowerMsg.includes('hi')) {
+                    answerText = "Hello. I am Nova, your coding expert. How can I assist with your development work today?";
+                }
+                else if (lowerMsg.includes('thank')) {
+                    answerText = "You are welcome. If you have more coding questions, I am here to help.";
+                }
+                else {
+                    answerText = "I understand you need coding assistance. Could you provide more details about the programming language, framework, or the specific problem you are facing? I will provide a clear explanation or code example.";
                 }
 
-                addMessage('assistant', answerText, imageUrl);
-            }, 1300 + Math.random() * 700); // variable delay
+                addMessage('assistant', answerText);
+                isWaitingReply = false;
+            }, 1000 + Math.random() * 500);
         }
 
-        // ----- send user message handler -----
         function handleSend() {
             const text = userInput.value.trim();
             if (text === '' || isWaitingReply) return;
 
-            // add user message
             addMessage('user', text);
-
-            // clear input & reset height
             userInput.value = '';
             userInput.style.height = 'auto';
-
-            // set wait state to avoid double send
             isWaitingReply = true;
-
-            // generate answer (will reset isWaitingReply after finishing)
-            // but typing indicator removal sets isWaiting false
-            const originalWait = isWaitingReply;
             generateAssistantReply(text);
-
-            // we need to reset isWaiting when reply finishes (inside timeout)
-            // However, due to closure we can override the set timeout function.
-            // Better: store timeout id and reset after done.
-            const timeoutId = setTimeout(() => {}, 1); // dummy, but we override in generate fn
-            // but we replace by overriding removeTypingIndicator behavior? simpler: modify generateAssistantReply to reset flag.
-            // let's patch: we'll override the addMessage part? keep clean: we capture a reference.
-            // We'll just reassign after each send. For now we reset after the timeout.
-            const originalRemove = removeTypingIndicator;
-            window.removeTypingIndicator = function() {
-                originalRemove();
-                isWaitingReply = false;
-            };
-            // override remove inside function? We'll override temporarily.
-            // I'll do it inside generateAssistantReply to reset flag.
         }
 
-        // properly fix: we modify generateAssistantReply to call a modified remove.
-        const originalGenerate = generateAssistantReply;
-        function wrappedGenerateReply(userMsg) {
-            showTypingIndicator();
-            setTimeout(() => {
-                removeTypingIndicator();
-                let answerText = '';
-                let imageUrl = null;
-                const lowerMsg = userMsg.toLowerCase();
-
-                const imageTriggers = ['generate', 'create image', 'make image', 'draw', 'picture', 'photorealistic', 'realistic image', 'photo of', 'image of '];
-                const wantsImage = imageTriggers.some(trigger => lowerMsg.includes(trigger)) || (lowerMsg.includes('image') && !lowerMsg.includes('no image')) || lowerMsg.includes('realistic') || lowerMsg.includes('photoreal');
-
-                if (wantsImage) {
-                    answerText = "🎨 Here is a **high‑quality realistic image** generated from your prompt:\n\n" + 
-                                 "(it's a photograph-like result, using my advanced diffusion engine)";
-                    imageUrl = generateRealisticImageURL(userMsg);
-                } else {
-                    if (lowerMsg.includes('hello') || lowerMsg.includes('hi')) {
-                        answerText = "Hi there! I'm your DeepSeek-style assistant. Ready to chat or generate images.";
-                    } else if (lowerMsg.includes('ability') || lowerMsg.includes('capable')) {
-                        answerText = "I can do everything DeepSeek does: answer questions, code, reason, and **generate realistic images**. Describe a scene and I'll create it!";
-                    } else if (lowerMsg.includes('thank')) {
-                        answerText = "You're welcome! Anything else — maybe an image?";
-                    } else if (lowerMsg.includes('who are you')) {
-                        answerText = "I'm an AI with full DeepSeek abilities, plus image generation that feels like real photos.";
-                    } else {
-                        answerText = "Got it. I'm listening. Want me to generate an image? Just include words like *'generate a realistic ...'*";
-                    }
-                }
-                addMessage('assistant', answerText, imageUrl);
-                isWaitingReply = false;   // reset flag
-            }, 1300 + Math.random() * 600);
-        }
-
-        // replace
-        generateAssistantReply = wrappedGenerateReply;
-
-        // event listeners
-        sendBtn.addEventListener('click', () => {
-            handleSend();
-        });
+        sendBtn.addEventListener('click', handleSend);
 
         userInput.addEventListener('keydown', (e) => {
             if (e.key === 'Enter' && !e.shiftKey) {
@@ -619,24 +428,19 @@
             }
         });
 
-        // auto-resize textarea
         userInput.addEventListener('input', function() {
             this.style.height = 'auto';
             this.style.height = (this.scrollHeight) + 'px';
         });
 
-        // new chat button – clear messages except first welcome
         newChatBtn.addEventListener('click', () => {
             streamEl.innerHTML = '';
-            // re-add welcome
             const welcomeDiv = document.createElement('div');
             welcomeDiv.className = 'message assistant';
-            welcomeDiv.innerHTML = `<div class="avatar">AI</div><div class="bubble">👋 I'm your DeepSeek-style assistant. I can chat, answer questions, and **generate ultra‑realistic images**.<br>Just describe what you want — for example: <i>"a photorealistic cat on a Venice balcony"</i> or <i>"a cozy library with sunlight"</i></div>`;
+            welcomeDiv.innerHTML = '<div class="avatar">N</div><div class="bubble">I am Nova, a coding expert. I can help you write, debug, and understand code in any programming language. Ask me about algorithms, system design, or refactoring.</div>';
             streamEl.appendChild(welcomeDiv);
             isWaitingReply = false;
         });
-
-        // initial set
     })();
 </script>
 </body>
